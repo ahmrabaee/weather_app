@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>تنبيه عام - نظام الإنذار المبكر</title>
+    <link rel="stylesheet" href="css/main.css">
+    <link rel="stylesheet" href="css/components.css">
+    <link rel="stylesheet" href="css/pages.css">
+</head>
+
+<body>
+    <!-- Simple Header -->
+    <header class="header">
+        <div class="header-content">
+            <h1 class="header-title" data-i18n="systemName">نظام الإنذار المبكر</h1>
+            <button class="language-toggle" id="langToggle">English</button>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="public-alert-container">
+        <div id="alertBanner"></div>
+        <div id="alertContent"></div>
+
+        <!-- Map Section -->
+        <div class="card mt-6">
+            <h3 class="section-title" data-i18n="where">أين؟</h3>
+            <div class="map-container">
+                <svg class="map-svg" viewBox="0 0 300 400" xmlns="http://www.w3.org/2000/svg">
+                    <!-- Simple Palestine Map Representation -->
+                    <!-- Water (Mediterranean Sea) -->
+                    <rect x="0" y="0" width="120" height="400" fill="#DBEAFE" />
+
+                    <!-- Land (Palestine) -->
+                    <path
+                        d="M 120 50 L 280 50 L 280 150 L 250 200 L 250 300 L 200 350 L 180 380 L 150 380 L 130 350 L 120 300 Z"
+                        fill="#F5E6D3" stroke="#9CA3AF" stroke-width="2" />
+
+                    <!-- Affected Area Highlight (will be updated by JS) -->
+                    <circle id="affectedAreaMarker" cx="200" cy="150" r="30" fill="#F39C12" opacity="0.5" />
+
+                    <!-- Location Labels -->
+                    <text x="200" y="120" text-anchor="middle" font-size="12" fill="#374151">Ramallah</text>
+                    <text x="230" y="220" text-anchor="middle" font-size="12" fill="#374151">Jericho</text>
+                </svg>
+            </div>
+            <div style="text-align: center; margin-top: 1rem;">
+                <p id="affectedAreasList"></p>
+            </div>
+        </div>
+
+        <!-- Demo Note -->
+        <div class="demo-note">
+            <span data-i18n="demoNote">هذا نموذج تجريبي يستخدم بيانات اختبارية فقط.</span>
+        </div>
+    </main>
+
+    <script src="js/i18n.js"></script>
+    <script src="js/data.js"></script>
+    <script>
+        // Get alert ID from URL
+        const urlParams = new URLSearchParams(window.location.search);
+        const alertId = urlParams.get('id');
+
+        // Format date
+        function formatDate(dateString) {
+            const date = new Date(dateString);
+            const lang = i18n.currentLanguage;
+            return date.toLocaleDateString(lang === 'ar' ? 'ar-SA' : 'en-US', {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+        }
+
+        // Load and display alert
+        function loadAlert() {
+            if (!alertId) {
+                showNoAlert();
+                return;
+            }
+
+            const alert = DataManager.getAlertById(alertId);
+            if (!alert) {
+                showNoAlert();
+                return;
+            }
+
+            const lang = i18n.currentLanguage;
+            const title = typeof alert.title === 'object' ? alert.title[lang] : alert.title;
+            const description = typeof alert.description === 'object' ? alert.description[lang] : alert.description;
+            const advice = alert.publicAdvice && typeof alert.publicAdvice === 'object'
+                ? alert.publicAdvice[lang]
+                : [];
+
+            // Banner
+            const bannerClass = `alert-banner alert-banner-${alert.level.toLowerCase()}`;
+            document.getElementById('alertBanner').className = bannerClass;
+            document.getElementById('alertBanner').innerHTML = `
+                <h1 class="alert-banner-title">${i18n.t(`alertLevels.${alert.level}`)} ${i18n.t('publicAlert')}</h1>
+                <p class="alert-banner-date">${formatDate(alert.issueTime)}</p>
+            `;
+
+            // Content
+            const adviceList = advice.length > 0
+                ? `<ul class="advice-list">${advice.map(item => `<li>${item}</li>`).join('')}</ul>`
+                : `<p>${i18n.t('noActiveAlerts')}</p>`;
+
+            document.getElementById('alertContent').innerHTML = `
+                <div class="alert-content">
+                    <h2 style="text-align: center; color: var(--color-primary); margin-bottom: 2rem;">${title}</h2>
+                    
+                    <div class="alert-section">
+                        <h3 class="alert-section-title" data-i18n="whatIsHappening">${i18n.t('whatIsHappening')}</h3>
+                        <div class="alert-section-content">${description}</div>
+                    </div>
+
+                    <div class="alert-section">
+                        <h3 class="alert-section-title" data-i18n="when">${i18n.t('when')}</h3>
+                        <div class="alert-section-content">
+                            <strong>${i18n.t('validFrom')}:</strong> ${formatDate(alert.validFrom)}<br>
+                            <strong>${i18n.t('validTo')}:</strong> ${formatDate(alert.validTo)}
+                        </div>
+                    </div>
+
+                    <div class="alert-section">
+                        <h3 class="alert-section-title" data-i18n="whatShouldIDo">${i18n.t('whatShouldIDo')}</h3>
+                        <div class="alert-section-content">
+                            ${adviceList}
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            // Update affected areas
+            const areas = alert.affectedAreas.map(area => i18n.t(`areas.${area}`) || area).join(', ');
+            document.getElementById('affectedAreasList').innerHTML = `<strong>${i18n.t('affectedRegions')}:</strong> ${areas}`;
+        }
+
+        function showNoAlert() {
+            document.getElementById('alertBanner').className = 'alert-banner alert-banner-yellow';
+            document.getElementById('alertBanner').innerHTML = `
+                <h1 class="alert-banner-title">${i18n.t('noActiveAlerts')}</h1>
+            `;
+            document.getElementById('alertContent').innerHTML = `
+                <div class="alert-content">
+                    <p style="text-align: center; padding: 3rem;">
+                        ${i18n.t('noActiveAlerts')}
+                    </p>
+                </div>
+            `;
+        }
+
+        // Update UI text
+        function updateUIText() {
+            document.querySelectorAll('[data-i18n]').forEach(el => {
+                const key = el.getAttribute('data-i18n');
+                el.textContent = i18n.t(key);
+            });
+
+            document.getElementById('langToggle').textContent = i18n.currentLanguage === 'ar' ? 'English' : 'عربي';
+            loadAlert(); // Reload to update translations
+        }
+
+        // Language toggle
+        document.getElementById('langToggle').addEventListener('click', () => {
+            i18n.toggle();
+            updateUIText();
+        });
+
+        // Listen for language changes
+        window.addEventListener('languageChanged', updateUIText);
+
+        // Initial load
+        updateUIText();
+    </script>
+</body>
+
+</html>

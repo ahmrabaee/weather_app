@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>الموافقة على التنبيهات - نظام الإنذار المبكر</title>
+    <link rel="stylesheet" href="css/main.css">
+    <link rel="stylesheet" href="css/components.css">
+    <link rel="stylesheet" href="css/pages.css">
+</head>
+
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="header-content">
+            <h1 class="header-title" data-i18n="systemName">نظام الإنذار المبكر</h1>
+            <div class="header-user">
+                <button class="language-toggle" id="langToggle">English</button>
+                <div class="user-badge">
+                    <span class="user-icon">👤</span>
+                    <span id="userRole"></span>
+                </div>
+                <button class="logout-btn" id="logoutBtn" data-i18n="logout">تسجيل الخروج</button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="sector-dashboard-container">
+        <!-- Alerts List -->
+        <div class="alerts-list-section">
+            <h2 class="section-title" data-i18n="pendingAlerts">التنبيهات المعلقة</h2>
+            <div id="alertsList"></div>
+        </div>
+
+        <!-- Alert Details -->
+        <div class="alert-details-section">
+            <div id="alertDetails">
+                <div style="text-align: center; color: var(--color-gray-500); padding: 3rem;">
+                    <p data-i18n="selectAlertToView">اختر تنبيهًا لعرض التفاصيل</p>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script src="js/i18n.js"></script>
+    <script src="js/data.js"></script>
+    <script>
+        // Check authentication
+        if (!DataManager.requireLogin()) {
+            window.location.href = 'index.html';
+        }
+
+        const currentUser = DataManager.getCurrentUser();
+        let selectedAlert = null;
+
+        // Update UI text
+        function updateUIText() {
+            document.querySelectorAll('[data-i18n]').forEach(el => {
+                const key = el.getAttribute('data-i18n');
+                el.textContent = i18n.t(key);
+            });
+
+            document.getElementById('userRole').textContent = i18n.t(`roles.${currentUser.role}`);
+            document.getElementById('langToggle').textContent = i18n.currentLanguage === 'ar' ? 'English' : 'عربي';
+
+            loadAlerts();
+            if (selectedAlert) {
+                showAlertDetails(selectedAlert);
+            }
+        }
+
+        // Format date
+        function formatDate(dateString) {
+            const date = new Date(dateString);
+            const lang = i18n.currentLanguage;
+            return date.toLocaleDateString(lang === 'ar' ? 'ar-SA' : 'en-US', {
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+        }
+
+        // Load alerts
+        function loadAlerts() {
+            const alerts = DataManager.getActiveAlerts();
+            const lang = i18n.currentLanguage;
+            const alertsList = document.getElementById('alertsList');
+
+            if (alerts.length === 0) {
+                alertsList.innerHTML = `
+                    <div style="text-align: center; padding: 2rem; color: var(--color-gray-500);">
+                        <p data-i18n="noActiveAlerts">${i18n.t('noActiveAlerts')}</p>
+                    </div>
+                `;
+                return;
+            }
+
+            alertsList.innerHTML = alerts.map(alert => {
+                const title = typeof alert.title === 'object' ? alert.title[lang] : alert.title;
+                const areas = alert.affectedAreas.map(area => i18n.t(`areas.${area}`) || area).join(', ');
+                const status = alert.statusBySector[currentUser.role] || 'Pending';
+
+                return `
+                    <div class="alert-list-item ${selectedAlert?.id === alert.id ? 'active' : ''}" 
+                         onclick="selectAlert('${alert.id}')">
+                        <div class="alert-list-header">
+                            <div class="alert-list-title">${title}</div>
+                            <span class="alert-badge alert-badge-${alert.level.toLowerCase()}">
+                                ${i18n.t(`alertLevels.${alert.level}`)}
+                            </span>
+                        </div>
+                        <div class="alert-list-meta">
+                            <div><strong>${i18n.t('affectedRegions')}:</strong> ${areas}</div>
+                            <div><strong>${i18n.t('sectorStatus')}:</strong> 
+                                <span class="status-badge status-${status.toLowerCase().replace(' ', '-')}">
+                                    ${i18n.t(`status.${status}`)}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // Select and show alert
+        window.selectAlert = function (alertId) {
+            const alert = DataManager.getAlertById(alertId);
+            if (!alert) return;
+            selectedAlert = alert;
+            loadAlerts();
+            showAlertDetails(alert);
+        };
+
+        // Show alert details
+        function showAlertDetails(alert) {
+            const lang = i18n.currentLanguage;
+            const title = typeof alert.title === 'object' ? alert.title[lang] : alert.title;
+            const description = typeof alert.description === 'object' ? alert.description[lang] : alert.description;
+            const areas = alert.affectedAreas.map(area => i18n.t(`areas.${area}`) || area).join(', ');
+            const status = alert.statusBySector[currentUser.role] || 'Pending';
+
+            // Get sector-specific recommendations
+            const recommendation = alert.sectorRecommendations?.[currentUser.role];
+            const recommendationText = recommendation
+                ? (typeof recommendation === 'object' ? recommendation[lang] : recommendation)
+                : i18n.t('status.Not Applicable');
+
+            const detailsHtml = `
+                <div class="alert-detail-header">
+                    <h2 class="alert-detail-title">${title}</h2>
+                    <span class="alert-badge alert-badge-${alert.level.toLowerCase()} alert-badge-large">
+                        ${i18n.t(`alertLevels.${alert.level}`)}
+                    </span>
+                </div>
+
+                <div class="alert-info-grid">
+                    <div class="info-item">
+                        <div class="info-label" data-i18n="hazardType">${i18n.t('hazardType')}</div>
+                        <div class="info-value">${i18n.t(`hazardTypes.${alert.hazardType}`)}</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label" data-i18n="validFrom">${i18n.t('validFrom')}</div>
+                        <div class="info-value">${formatDate(alert.validFrom)}</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label" data-i18n="validTo">${i18n.t('validTo')}</div>
+                        <div class="info-value">${formatDate(alert.validTo)}</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label" data-i18n="affectedRegions">${i18n.t('affectedRegions')}</div>
+                        <div class="info-value">${areas}</div>
+                    </div>
+                </div>
+
+                <div class="card-body">
+                    <h4 data-i18n="description">${i18n.t('description')}</h4>
+                    <p>${description}</p>
+
+                    <h4 data-i18n="sectorRecommendations">${i18n.t('sectorRecommendations')}</h4>
+                    <p>${recommendationText}</p>
+                </div>
+
+                <div class="card-footer">
+                    <div class="form-group">
+                        <label class="form-label" data-i18n="sectorStatus">${i18n.t('sectorStatus')}</label>
+                        <select class="form-control" id="statusSelect">
+                            <option value="Pending" ${status === 'Pending' ? 'selected' : ''}>
+                                ${i18n.t('status.Pending')}
+                            </option>
+                            <option value="Acknowledged" ${status === 'Acknowledged' ? 'selected' : ''}>
+                                ${i18n.t('status.Acknowledged')}
+                            </option>
+                            <option value="In Progress" ${status === 'In Progress' ? 'selected' : ''}>
+                                ${i18n.t('status.In Progress')}
+                            </option>
+                            <option value="Completed" ${status === 'Completed' ? 'selected' : ''}>
+                                ${i18n.t('status.Completed')}
+                            </option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">ملاحظات / Notes</label>
+                        <textarea class="form-control" id="statusNotes" rows="3"></textarea>
+                    </div>
+
+                    <div style="display: flex; gap: 1rem;">
+                        <button class="btn btn-danger" onclick="updateStatus('Pending')">
+                            <span data-i18n="reject">${i18n.t('reject')}</span>
+                        </button>
+                        <button class="btn btn-success" onclick="updateStatus('Acknowledged')">
+                            <span data-i18n="approve">${i18n.t('approve')}</span>
+                        </button>
+                        <button class="btn btn-primary" onclick="saveStatus()">
+                            <span data-i18n="update">${i18n.t('update')}</span>
+                        </button>
+                    </div>
+                </div>
+            `;
+
+            document.getElementById('alertDetails').innerHTML = detailsHtml;
+        }
+
+        // Update status
+        window.updateStatus = function (newStatus) {
+            if (!selectedAlert) return;
+
+            const notes = document.getElementById('statusNotes')?.value || '';
+            DataManager.updateSectorStatus(selectedAlert.id, currentUser.role, newStatus, notes);
+
+            alert(i18n.t('alertUpdatedSuccess'));
+            selectedAlert = DataManager.getAlertById(selectedAlert.id);
+            loadAlerts();
+            showAlertDetails(selectedAlert);
+        };
+
+        // Save custom status
+        window.saveStatus = function () {
+            if (!selectedAlert) return;
+
+            const statusSelect = document.getElementById('statusSelect');
+            const newStatus = statusSelect.value;
+            updateStatus(newStatus);
+        };
+
+        // Language toggle
+        document.getElementById('langToggle').addEventListener('click', () => {
+            i18n.toggle();
+            updateUIText();
+        });
+
+        // Logout
+        document.getElementById('logoutBtn').addEventListener('click', () => {
+            DataManager.logout();
+        });
+
+        // Listen for language changes
+        window.addEventListener('languageChanged', updateUIText);
+
+        // Initial load
+        updateUIText();
+        loadAlerts();
+    </script>
+</body>
+
+</html>

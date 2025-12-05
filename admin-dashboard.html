@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>لوحة التحكم - نظام الإنذار المبكر</title>
+    <link rel="stylesheet" href="css/main.css">
+    <link rel="stylesheet" href="css/components.css">
+    <link rel="stylesheet" href="css/pages.css">
+</head>
+
+<body style="background-color: hsl(210, 20%, 98%);">
+    <!-- Modern Header (matching reference) -->
+    <header
+        style="position: sticky; top: 0; z-index: 50; width: 100%; border-bottom: 1px solid hsl(215, 20%, 88%); background-color: white; box-shadow: var(--shadow-md);">
+        <div class="container"
+            style="display: flex; height: 64px; align-items: center; justify-content: space-between;">
+            <div style="display: flex; align-items: center; gap: 1rem;">
+                <div
+                    style="width: 40px; height: 40px; border-radius: 0.5rem; background: var(--gradient-primary); display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; font-size: 1.25rem;">
+                    EWS
+                </div>
+                <div>
+                    <h1 style="font-size: 1.125rem; font-weight: bold; margin: 0;" data-i18n="systemName">نظام الإنذار
+                        المبكر</h1>
+                    <p style="font-size: 0.75rem; color: var(--color-gray-500); margin: 0;">
+                        <span id="currentUser"></span>
+                    </p>
+                </div>
+            </div>
+            <div style="display: flex; gap: 0.5rem;">
+                <button class="btn btn-secondary btn-sm" id="langToggle"
+                    style="display: flex; align-items: center; gap: 0.5rem;">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <line x1="2" y1="12" x2="22" y2="12"></line>
+                        <path
+                            d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z">
+                        </path>
+                    </svg>
+                    <span>EN</span>
+                </button>
+                <button class="btn btn-secondary btn-sm" id="logoutBtn"
+                    style="display: flex; align-items: center; gap: 0.5rem;">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+                        <polyline points="16 17 21 12 16 7"></polyline>
+                        <line x1="21" y1="12" x2="9" y2="12"></line>
+                    </svg>
+                    <span data-i18n="logout">خروج</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <main class="container" style="padding-top: 1.5rem; padding-bottom: 2rem;">
+        <!-- Page Title & Actions -->
+        <div
+            style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem; margin-bottom: 1.5rem;">
+            <h1 style="font-size: 1.875rem; font-weight: bold; margin: 0;" data-i18n="dashboard.title">لوحة تحكم الأرصاد
+            </h1>
+            <div style="display: flex; gap: 0.5rem;">
+                <a href="disseminate-alert.html" class="btn btn-secondary">السجلات</a>
+                <a href="public-alert.html" class="btn btn-secondary">العرض العام</a>
+                <a href="create-alert.html" class="btn btn-primary"
+                    style="background: var(--gradient-primary); display: flex; align-items: center; gap: 0.5rem;">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="12" y1="5" x2="12" y2="19"></line>
+                        <line x1="5" y1="12" x2="19" y2="12"></line>
+                    </svg>
+                    <span data-i18n="createAlert">إنشاء تنبيه</span>
+                </a>
+            </div>
+        </div>
+
+        <!-- Stats Cards -->
+        <div
+            style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 1.5rem;">
+            <!-- Total Alerts -->
+            <div class="card" style="box-shadow: var(--shadow-md);">
+                <div style="padding: 0.75rem 1.5rem; border-bottom: 1px solid var(--color-gray-200);">
+                    <h3 style="font-size: 0.875rem; font-weight: 500; color: var(--color-gray-600); margin: 0;"
+                        data-i18n="activeAlerts">التنبيهات النشطة</h3>
+                </div>
+                <div style="padding: 1.5rem;">
+                    <div style="display: flex; align-items: center; gap: 0.75rem;">
+                        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="var(--color-primary)"
+                            stroke-width="2">
+                            <path
+                                d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z">
+                            </path>
+                            <line x1="12" y1="9" x2="12" y2="13"></line>
+                            <line x1="12" y1="17" x2="12.01" y2="17"></line>
+                        </svg>
+                        <span id="totalAlertsCount" style="font-size: 1.875rem; font-weight: bold;">0</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Yellow Alerts -->
+            <div class="card alert-badge-yellow" style="box-shadow: var(--shadow-md);">
+                <div style="padding: 0.75rem 1.5rem;">
+                    <h3 style="font-size: 0.875rem; font-weight: 500; margin: 0;" data-i18n="alertLevels.Yellow">أصفر
+                    </h3>
+                </div>
+                <div style="padding: 1.5rem; padding-top: 0.5rem;">
+                    <span id="yellowAlertsCount" style="font-size: 1.875rem; font-weight: bold;">0</span>
+                </div>
+            </div>
+
+            <!-- Orange Alerts -->
+            <div class="card alert-badge-orange" style="box-shadow: var(--shadow-md);">
+                <div style="padding: 0.75rem 1.5rem;">
+                    <h3 style="font-size: 0.875rem; font-weight: 500; margin: 0;" data-i18n="alertLevels.Orange">برتقالي
+                    </h3>
+                </div>
+                <div style="padding: 1.5rem; padding-top: 0.5rem;">
+                    <span id="orangeAlertsCount" style="font-size: 1.875rem; font-weight: bold;">0</span>
+                </div>
+            </div>
+
+            <!-- Red Alerts -->
+            <div class="card alert-badge-red" style="box-shadow: var(--shadow-md);">
+                <div style="padding: 0.75rem 1.5rem;">
+                    <h3 style="font-size: 0.875rem; font-weight: 500; margin: 0;" data-i18n="alertLevels.Red">أحمر</h3>
+                </div>
+                <div style="padding: 1.5rem; padding-top: 0.5rem;">
+                    <span id="redAlertsCount" style="font-size: 1.875rem; font-weight: bold;">0</span>
+                </div>
+            </div>
+
+            <!-- Avg Response Time -->
+            <div class="card" style="box-shadow: var(--shadow-md);">
+                <div style="padding: 0.75rem 1.5rem; border-bottom: 1px solid var(--color-gray-200);">
+                    <h3 style="font-size: 0.875rem; font-weight: 500; color: var(--color-gray-600); margin: 0;">متوسط
+                        الاستجابة</h3>
+                </div>
+                <div style="padding: 1.5rem;">
+                    <div style="display: flex; align-items: center; gap: 0.75rem;">
+                        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="var(--color-primary)"
+                            stroke-width="2">
+                            <circle cx="12" cy="12" r="10"></circle>
+                            <polyline points="12 6 12 12 16 14"></polyline>
+                        </svg>
+                        <span style="font-size: 1.875rem; font-weight: bold;">2.5h</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Alerts List -->
+        <div class="card" style="box-shadow: var(--shadow-md);">
+            <div style="padding: 1.5rem; border-bottom: 1px solid var(--color-gray-200);">
+                <div style="display: flex; align-items: center; justify-between;">
+                    <h2
+                        style="font-size: 1.25rem; font-weight: bold; margin: 0; display: flex; align-items: center; gap: 0.5rem;">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2">
+                            <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon>
+                        </svg>
+                        <span data-i18n="activeAlerts">التنبيهات النشطة</span>
+                    </h2>
+                    <div style="display: flex; gap: 0.5rem;">
+                        <select class="form-control" id="filterLevel" style="width: 10rem; padding: 0.5rem;">
+                            <option value="all">الكل</option>
+                            <option value="yellow">أصفر</option>
+                            <option value="orange">برتقالي</option>
+                            <option value="red">أحمر</option>
+                        </select>
+                        <select class="form-control" id="filterStatus" style="width: 10rem; padding: 0.5rem;">
+                            <option value="active">نشط</option>
+                            <option value="past">سابق</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+            <div style="padding: 1.5rem;">
+                <div id="alertsList" style="display: flex; flex-direction: column; gap: 1rem;">
+                    <!-- Alerts will be loaded here -->
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script src="js/i18n.js"></script>
+    <script src="js/data.js"></script>
+    <script>
+        if (!DataManager.requireLogin() || !DataManager.hasRole('meteorology')) {
+            window.location.href = 'index.html';
+        }
+
+        const user = DataManager.getCurrentUser();
+
+        function updateUIText() {
+            document.querySelectorAll('[data-i18n]').forEach(el => {
+                const key = el.getAttribute('data-i18n');
+                el.textContent = i18n.t(key);
+            });
+
+            document.getElementById('currentUser').textContent =
+                `${user.name} - ${i18n.t(`role.${user.role}`)}`;
+
+            const langBtn = document.getElementById('langToggle').querySelector('span');
+            langBtn.textContent = i18n.currentLanguage === 'ar' ? 'EN' : 'عربي';
+
+            loadAlerts();
+        }
+
+        function loadAlerts() {
+            const alerts = DataManager.getActiveAlerts();
+            const lang = i18n.currentLanguage;
+
+            document.getElementById('totalAlertsCount').textContent = alerts.length;
+            document.getElementById('yellowAlertsCount').textContent =
+                alerts.filter(a => a.level === 'Yellow').length;
+            document.getElementById('orangeAlertsCount').textContent =
+                alerts.filter(a => a.level === 'Orange').length;
+            document.getElementById('redAlertsCount').textContent =
+                alerts.filter(a => a.level === 'Red').length;
+
+            const alertsList = document.getElementById('alertsList');
+
+            if (alerts.length === 0) {
+                alertsList.innerHTML = `
+                    <div style="text-align: center; padding: 3rem; color: var(--color-gray-500);">
+                        <p data-i18n="noActiveAlerts">${i18n.t('noActiveAlerts')}</p>
+                    </div>
+                `;
+                return;
+            }
+
+            alertsList.innerHTML = alerts.map(alert => {
+                const title = typeof alert.title === 'object' ? alert.title[lang] : alert.title;
+                const areas = alert.affectedAreas.map(area => i18n.t(`areas.${area}`) || area).join(', ');
+                const levelClass = `alert-badge-${alert.level.toLowerCase()}`;
+
+                return `
+                    <div style="padding: 1rem; border-radius: 0.5rem; border: 1px solid var(--color-border); background: white; cursor: pointer; transition: box-shadow 0.2s;" onmouseover="this.style.boxShadow='var(--shadow-md)'" onmouseout="this.style.boxShadow='none'">
+                        <div style="display: flex; justify-content: space-between; align-items: start; gap: 1rem;">
+                            <div style="flex: 1;">
+                                <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem;">
+                                    <span style="font-family: monospace; font-size: 0.75rem; padding: 0.25rem 0.5rem; border: 1px solid var(--color-border); border-radius: 0.25rem;">${alert.id}</span>
+                                    <span class="alert-badge ${levelClass}" style="padding: 0.25rem 0.75rem; border-radius: 0.25rem; font-size: 0.75rem; font-weight: 600;">
+                                        ${i18n.t(`alertLevels.${alert.level}`)}
+                                    </span>
+                                    <span class="status-badge status-${alert.status.toLowerCase()}" style="padding: 0.25rem 0.75rem; border-radius: 9999px; font-size: 0.75rem;">
+                                        ${i18n.t(`status.${alert.status}`)}
+                                    </span>
+                                </div>
+                                <h3 style="font-size: 1.125rem; font-weight: 600; margin: 0.5rem 0;">${title}</h3>
+                                <div style="display: flex; flex-wrap: wrap; gap: 0.5rem; font-size: 0.875rem; color: var(--color-gray-600);">
+                                    <span>📍 ${areas}</span>
+                                    <span>•</span>
+                                    <span>⏰ ${new Date(alert.validTo).toLocaleString(lang === 'ar' ? 'ar-SA' : 'en-US')}</span>
+                                </div>
+                            </div>
+                            <button class="btn btn-secondary btn-sm" onclick="window.location.href='create-alert.html?id=${alert.id}'" style="flex-shrink: 0;">
+                                ${i18n.t('edit')}
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        document.getElementById('langToggle').addEventListener('click', () => {
+            i18n.toggle();
+            updateUIText();
+        });
+
+        document.getElementById('logoutBtn').addEventListener('click', () => {
+            DataManager.logout();
+        });
+
+        window.addEventListener('languageChanged', updateUIText);
+        updateUIText();
+        loadAlerts();
+    </script>
+</body>
+
+</html>

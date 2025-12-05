@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>نشر التنبيه - نظام الإنذار المبكر</title>
+    <link rel="stylesheet" href="css/main.css">
+    <link rel="stylesheet" href="css/components.css">
+    <link rel="stylesheet" href="css/pages.css">
+</head>
+
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="header-content">
+            <h1 class="header-title" data-i18n="systemName">نظام الإنذار المبكر</h1>
+            <div class="header-user">
+                <button class="language-toggle" id="langToggle">English</button>
+                <div class="user-badge">
+                    <span class="user-icon">👤</span>
+                    <span id="userRole">الأرصاد الجوية</span>
+                </div>
+                <button class="logout-btn" id="logoutBtn" data-i18n="logout">تسجيل الخروج</button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="disseminate-container">
+        <h2 style="text-align: center; color: var(--color-primary); margin-bottom: 2rem;" data-i18n="disseminateAlert">
+            نشر التنبيه</h2>
+
+        <!-- Alert Info -->
+        <div class="card" id="alertInfo"></div>
+
+        <!-- Communication Channels -->
+        <div class="form-section">
+            <h3 class="form-section-title" data-i18n="communicationChannels">قنوات الاتصال</h3>
+
+            <div class="tabs">
+                <button class="tab active" data-tab="sms">
+                    <span data-i18n="sms">رسائل نصية</span>
+                </button>
+                <button class="tab" data-tab="whatsapp">
+                    <span data-i18n="whatsapp">واتساب</span>
+                </button>
+                <button class="tab" data-tab="email">
+                    <span data-i18n="email">بريد إلكتروني</span>
+                </button>
+            </div>
+
+            <div class="tab-content">
+                <div id="tab-sms" class="tab-pane active">
+                    <div class="contact-list">
+                        <div class="contact-item">
+                            <div>
+                                <div class="contact-name">جهات الاتصال - رام الله</div>
+                                <div class="contact-location">Ramallah Contacts</div>
+                            </div>
+                            <span class="text-gray-500">+970 XXX XXXX</span>
+                        </div>
+                        <div class="contact-item">
+                            <div>
+                                <div class="contact-name">جهات الاتصال - أريحا</div>
+                                <div class="contact-location">Jericho Contacts</div>
+                            </div>
+                            <span class="text-gray-500">+970 XXX XXXX</span>
+                        </div>
+                    </div>
+                    <button class="btn btn-primary mt-4" onclick="sendDissemination('sms')">
+                        <span data-i18n="sendAlert">إرسال التنبيه</span>
+                    </button>
+                </div>
+
+                <div id="tab-whatsapp" class="tab-pane hidden">
+                    <div class="contact-list">
+                        <div class="contact-item">
+                            <div>
+                                <div class="contact-name">مجموعة واتساب - الطوارئ</div>
+                                <div class="contact-location">WhatsApp Emergency Group</div>
+                            </div>
+                            <span class="status-badge status-completed">✓ متصل</span>
+                        </div>
+                    </div>
+                    <button class="btn btn-primary mt-4" onclick="sendDissemination('whatsapp')">
+                        <span data-i18n="sendAlert">إرسال التنبيه</span>
+                    </button>
+                </div>
+
+                <div id="tab-email" class="tab-pane hidden">
+                    <div class="contact-list">
+                        <div class="contact-item">
+                            <div>
+                                <div class="contact-name">القائمة البريدية الرسمية</div>
+                                <div class="contact-location">Official Mailing List</div>
+                            </div>
+                            <span class="text-gray-500">250 مستلم</span>
+                        </div>
+                    </div>
+                    <button class="btn btn-primary mt-4" onclick="sendDissemination('email')">
+                        <span data-i18n="sendAlert">إرسال التنبيه</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Dissemination Log -->
+        <div class="form-section">
+            <h3 class="form-section-title" data-i18n="log">السجل</h3>
+            <div class="log-list" id="disseminationLog"></div>
+        </div>
+
+        <div class="form-actions">
+            <button class="btn btn-secondary" onclick="window.location.href='admin-dashboard.html'">
+                <span>← العودة للوحة التحكم / Back to Dashboard</span>
+            </button>
+        </div>
+    </main>
+
+    <script src="js/i18n.js"></script>
+    <script src="js/data.js"></script>
+    <script>
+        // Check authentication
+        if (!DataManager.requireLogin() || !DataManager.hasRole('Meteorology')) {
+            window.location.href = 'index.html';
+        }
+
+        // Get alert ID from URL
+        const urlParams = new URLSearchParams(window.location.search);
+        const alertId = urlParams.get('id');
+        let currentAlert = null;
+
+        // Update UI text
+        function updateUIText() {
+            document.querySelectorAll('[data-i18n]').forEach(el => {
+                const key = el.getAttribute('data-i18n');
+                el.textContent = i18n.t(key);
+            });
+
+            const user = DataManager.getCurrentUser();
+            document.getElementById('userRole').textContent = i18n.t(`roles.${user.role}`);
+            document.getElementById('langToggle').textContent = i18n.currentLanguage === 'ar' ? 'English' : 'عربي';
+
+            if (currentAlert) {
+                loadAlertInfo();
+                loadDisseminationLog();
+            }
+        }
+
+        // Load alert info
+        function loadAlertInfo() {
+            if (!alertId) {
+                document.getElementById('alertInfo').innerHTML = '<p style="text-align: center;">لم يتم تحديد تنبيه</p>';
+                return;
+            }
+
+            currentAlert = DataManager.getAlertById(alertId);
+            if (!currentAlert) {
+                document.getElementById('alertInfo').innerHTML = '<p style="text-align: center;">التنبيه غير موجود</p>';
+                return;
+            }
+
+            const lang = i18n.currentLanguage;
+            const title = typeof currentAlert.title === 'object' ? currentAlert.title[lang] : currentAlert.title;
+            const areas = currentAlert.affectedAreas.map(area => i18n.t(`areas.${area}`) || area).join(', ');
+
+            document.getElementById('alertInfo').innerHTML = `
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <div>
+                        <h3>${title}</h3>
+                        <p class="text-gray-600"><strong>${i18n.t('affectedRegions')}:</strong> ${areas}</p>
+                    </div>
+                    <span class="alert-badge alert-badge-${currentAlert.level.toLowerCase()} alert-badge-large">
+                        ${i18n.t(`alertLevels.${currentAlert.level}`)}
+                    </span>
+                </div>
+            `;
+        }
+
+        // Load dissemination log
+        function loadDisseminationLog() {
+            const log = DataManager.getDisseminationLog();
+            const logContainer = document.getElementById('disseminationLog');
+
+            if (log.length === 0) {
+                logContainer.innerHTML = '<p style="text-align: center; color: var(--color-gray-500);">لا توجد سجلات نشر</p>';
+                return;
+            }
+
+            logContainer.innerHTML = log.reverse().map(entry => {
+                const lang = i18n.currentLanguage;
+                const alertTitle = typeof entry.alertTitle === 'object' ? entry.alertTitle[lang] : entry.alertTitle;
+                const timestamp = new Date(entry.timestamp).toLocaleString(lang === 'ar' ? 'ar-SA' : 'en-US');
+
+                return `
+                    <div class="log-item">
+                        <div class="log-alert-info">
+                            <span class="alert-badge alert-badge-${entry.level.toLowerCase()}">
+                                ${i18n.t(`alertLevels.${entry.level}`)}
+                            </span>
+                            <div>
+                                <div style="font-weight: 500;">${alertTitle}</div>
+                                <div class="log-timestamp">${i18n.t('sentOn')} ${timestamp}</div>
+                            </div>
+                        </div>
+                        <span class="status-badge status-completed">${entry.status}</span>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // Tab switching
+        document.querySelectorAll('.tab').forEach(tab => {
+            tab.addEventListener('click', () => {
+                const tabName = tab.getAttribute('data-tab');
+
+                document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                tab.classList.add('active');
+
+                document.querySelectorAll('.tab-pane').forEach(pane => pane.classList.add('hidden'));
+                document.getElementById(`tab-${tabName}`).classList.remove('hidden');
+            });
+        });
+
+        // Send dissemination
+        window.sendDissemination = function (channel) {
+            if (!currentAlert) return;
+
+            const contacts = currentAlert.affectedAreas; // Simplified
+            DataManager.recordDissemination(currentAlert.id, channel, contacts);
+
+            alert(i18n.t('alertSentSuccess'));
+            loadAlertInfo();
+            loadDisseminationLog();
+        };
+
+        // Language toggle
+        document.getElementById('langToggle').addEventListener('click', () => {
+            i18n.toggle();
+            updateUIText();
+        });
+
+        // Logout
+        document.getElementById('logoutBtn').addEventListener('click', () => {
+            DataManager.logout();
+        });
+
+        // Listen for language changes
+        window.addEventListener('languageChanged', updateUIText);
+
+        // Initial load
+        updateUIText();
+        loadAlertInfo();
+        loadDisseminationLog();
+    </script>
+</body>
+
+</html>
