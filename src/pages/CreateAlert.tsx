@@ -2,8 +2,8 @@ import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Header } from '@/components/Header';
 import { AlertLevelBadge } from '@/components/AlertLevelBadge';
-import { InteractivePalestineMap } from '@/components/InteractivePalestineMap';
-import { useApp, Alert, AlertLevel } from '@/contexts/AppContext';
+import { MapComponent } from '@/components/MapComponent';
+import { useApp, Alert, AlertLevel, Marker } from '@/contexts/AppContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -15,7 +15,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { ArrowLeft, Sun, CloudRain, Wind, Droplets, Send, Save, Eye } from 'lucide-react';
+import { ArrowLeft, Sun, CloudRain, Wind, Droplets, Send, Save, Eye, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 const HAZARD_TYPES = [
@@ -61,6 +61,9 @@ export default function CreateAlert() {
     waterRec: existingAlert?.sectorRecommendations?.['water-authority'] || '',
     environmentRec: existingAlert?.sectorRecommendations?.['environment'] || '',
   });
+
+  // Markers state for map
+  const [markers, setMarkers] = useState<Marker[]>(existingAlert?.markers || []);
 
   const handleQuickTemplate = (template: typeof QUICK_TEMPLATES[0]) => {
     setFormData(prev => ({
@@ -109,6 +112,7 @@ export default function CreateAlert() {
       sectorResponses: existingAlert?.sectorResponses || [],
       createdBy: user?.name || 'Meteorology',
       createdAt: existingAlert?.createdAt || new Date().toISOString(),
+      markers, // Include markers in alert data
     };
 
     if (existingAlert) {
@@ -150,11 +154,10 @@ export default function CreateAlert() {
             <button
               key={template.hazard}
               onClick={() => handleQuickTemplate(template)}
-              className={`gov-card p-4 text-center transition-all hover:scale-105 cursor-pointer ${
-                formData.hazardType === template.hazard && formData.level === template.level
-                  ? 'ring-2 ring-primary'
-                  : ''
-              }`}
+              className={`gov-card p-4 text-center transition-all hover:scale-105 cursor-pointer ${formData.hazardType === template.hazard && formData.level === template.level
+                ? 'ring-2 ring-primary'
+                : ''
+                }`}
             >
               <AlertLevelBadge level={template.level} size="sm" />
               <p className="mt-2 font-medium">{template.label}</p>
@@ -166,14 +169,31 @@ export default function CreateAlert() {
           {/* Map Preview */}
           <div className="lg:col-span-1">
             <div className="gov-card p-4 sticky top-4">
-              <h3 className="font-semibold mb-4">
-                {language === 'en' ? 'Affected Areas' : 'المناطق المتأثرة'}
-              </h3>
-              <InteractivePalestineMap
-                affectedAreas={formData.affectedAreas}
-                level={formData.level}
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="font-semibold">
+                  {language === 'en' ? 'Map Location' : 'موقع الخريطة'}
+                </h3>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setMarkers([])}
+                  className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </Button>
+              </div>
+              <MapComponent
+                mode="edit"
+                markers={markers}
+                onMarkersChange={setMarkers}
+                selectedAlertLevel={formData.level}
                 className="w-full"
               />
+              <p className="text-xs text-muted-foreground mt-2">
+                {language === 'en'
+                  ? `Click map to place ${formData.level} markers. ${markers.length} marker(s) placed.`
+                  : `انقر على الخريطة لإضافة نقاط ${formData.level}. ${markers.length} نقطة موضوعة.`}
+              </p>
               {/* Selected Areas List */}
               {formData.affectedAreas.length > 0 && (
                 <div className="mt-4 space-y-2">
@@ -184,13 +204,12 @@ export default function CreateAlert() {
                     {formData.affectedAreas.map((area) => (
                       <span
                         key={area}
-                        className={`px-2 py-1 rounded text-xs font-medium ${
-                          formData.level === 'yellow' 
-                            ? 'bg-alert-yellow text-yellow-900' 
-                            : formData.level === 'orange'
+                        className={`px-2 py-1 rounded text-xs font-medium ${formData.level === 'yellow'
+                          ? 'bg-alert-yellow text-yellow-900'
+                          : formData.level === 'orange'
                             ? 'bg-alert-orange text-orange-900'
                             : 'bg-alert-red text-red-900'
-                        }`}
+                          }`}
                       >
                         {area}
                       </span>
@@ -241,11 +260,10 @@ export default function CreateAlert() {
                         key={level}
                         type="button"
                         onClick={() => setFormData(prev => ({ ...prev, level }))}
-                        className={`flex-1 p-3 rounded-lg transition-all ${
-                          formData.level === level
-                            ? `alert-badge-${level} ring-2 ring-offset-2`
-                            : 'bg-muted hover:bg-muted/80'
-                        }`}
+                        className={`flex-1 p-3 rounded-lg transition-all ${formData.level === level
+                          ? `alert-badge-${level} ring-2 ring-offset-2`
+                          : 'bg-muted hover:bg-muted/80'
+                          }`}
                       >
                         {level.charAt(0).toUpperCase() + level.slice(1)}
                       </button>
@@ -294,11 +312,10 @@ export default function CreateAlert() {
                   {AREAS.map((area) => (
                     <label
                       key={area}
-                      className={`flex items-center gap-2 p-3 rounded-lg border cursor-pointer transition-all ${
-                        formData.affectedAreas.includes(area)
-                          ? 'bg-primary/10 border-primary'
-                          : 'bg-card border-border hover:border-primary/50'
-                      }`}
+                      className={`flex items-center gap-2 p-3 rounded-lg border cursor-pointer transition-all ${formData.affectedAreas.includes(area)
+                        ? 'bg-primary/10 border-primary'
+                        : 'bg-card border-border hover:border-primary/50'
+                        }`}
                     >
                       <Checkbox
                         checked={formData.affectedAreas.includes(area)}

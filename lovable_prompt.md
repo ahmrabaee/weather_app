@@ -6,6 +6,18 @@ Create a **professional, government-style Early Warning System web application**
 
 **CRITICAL DESIGN REQUIREMENT**: The design MUST follow a **formal, authoritative government website aesthetic** - professional, trustworthy, and institutional. This is NOT a consumer app - it's a national crisis management system.
 
+**CRITICAL IMPLEMENTATION REQUIREMENT**: You MUST create **ALL 8 PAGES** listed in this document:
+1. Login & Role Selection
+2. Admin Dashboard (Meteorology)
+3. Create/Edit Alert
+4. Sector Dashboard (Other Ministries)
+5. Approve Alerts
+6. Disseminate Alert
+7. Public Alert View
+8. Activity Logs
+
+Do NOT skip any pages. Each page is essential for the complete prototype.
+
 ---
 
 ## 🎨 Design System & Visual Identity
@@ -1007,6 +1019,14 @@ interface Alert {
 - Status messages
 - All static content
 
+**IMPORTANT LANGUAGE SETTINGS:**
+- **Default Language**: **English** (NOT Arabic)
+- **Language Switcher**: Include a language toggle button in the header (EN/AR or English/العربية)
+- When Arabic is selected, apply RTL (right-to-left) layout and use Arabic fonts
+- When English is selected, use LTR (left-to-right) layout
+- Store language preference in localStorage or context
+- All text content must be available in both English and Arabic
+
 ### Responsive Design
 
 **Breakpoints:**
@@ -1069,13 +1089,23 @@ Use consistent spacing based on 8px grid:
 
 ### Map Component
 
-**Simple Palestine Outline Map:**
-- Use SVG format
-- Clickable regions (each governorate)
-- Highlight affected areas based on alert data
-- Color coding to match alert level
-- Responsive scaling
-- Fallback to static image if needed
+**CRITICAL: Use the Provided Palestine Map Image**
+
+You MUST use the uploaded map image located at `public/images/final-map.png` for the Palestine map component.
+
+**Implementation Requirements:**
+- Display the map image from `public/images/final-map.png` as the base map
+- Allow clickable/interactive regions (each governorate) if possible using image maps or SVG overlays
+- Highlight affected areas by overlaying colored semi-transparent layers that match the alert level
+- Apply color coding to match alert level (Yellow #FFC107, Orange #FF9800, Red #DC2626)
+- Ensure responsive scaling (the map should scale down on mobile devices)
+- The map should appear in:
+  - Page 3 (Create/Edit Alert): Map Preview showing selected affected areas
+  - Page 7 (Public Alert View): Interactive map showing which regions are affected
+  - Optionally in other pages where geographic visualization is helpful
+
+**Fallback:**
+- If the uploaded image is not available, use a simple SVG placeholder outline of Palestine
 
 ---
 

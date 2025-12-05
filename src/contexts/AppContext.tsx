@@ -5,6 +5,13 @@ export type AlertLevel = 'yellow' | 'orange' | 'red';
 export type AlertStatus = 'draft' | 'pending' | 'issued' | 'cancelled';
 export type SectorStatus = 'pending' | 'acknowledged' | 'in-progress' | 'completed';
 
+export interface Marker {
+  id: string;
+  x: number;
+  y: number;
+  level: AlertLevel;
+}
+
 export interface SectorResponse {
   sectorName: string;
   status: SectorStatus;
@@ -31,6 +38,7 @@ export interface Alert {
   sectorResponses: SectorResponse[];
   createdBy: string;
   createdAt: string;
+  markers?: Marker[]; // NEW: Map markers for alert visualization
 }
 
 export interface ActivityLog {

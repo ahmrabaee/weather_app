@@ -1,6 +1,6 @@
 import { useParams, useNavigate } from 'react-router-dom';
 import { useApp } from '@/contexts/AppContext';
-import { InteractivePalestineMap } from '@/components/InteractivePalestineMap';
+import { MapComponent } from '@/components/MapComponent';
 import { Button } from '@/components/ui/button';
 import { format } from 'date-fns';
 import { AlertTriangle, Calendar, MapPin, CheckCircle, Info, ArrowLeft } from 'lucide-react';
@@ -147,9 +147,10 @@ export default function PublicAlert() {
             </h2>
           </div>
           <div className="grid md:grid-cols-2 gap-6">
-            <InteractivePalestineMap
-              affectedAreas={alert.affectedAreas}
-              level={alert.level}
+            <MapComponent
+              mode="view"
+              markers={alert.markers || []}
+              selectedAlertLevel={alert.level}
               className="min-h-[400px]"
             />
             <div>
