@@ -15,15 +15,16 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { ArrowLeft, Sun, CloudRain, Wind, Droplets, Send, Save, Eye, Trash2 } from 'lucide-react';
+import { ArrowLeft, Sun, CloudRain, Wind, Droplets, Send, Save, Eye, Trash2, Flame } from 'lucide-react';
 import { toast } from 'sonner';
+import { cn } from '@/lib/utils';
 
 const HAZARD_TYPES = [
-  { value: 'heatwave', label: 'Heatwave', icon: Sun },
-  { value: 'flood', label: 'Flood', icon: CloudRain },
-  { value: 'storm', label: 'Storm', icon: Wind },
-  { value: 'drought', label: 'Drought', icon: Droplets },
-  { value: 'other', label: 'Other', icon: Wind },
+  { value: 'heatwave', label: 'Heatwave', labelAr: 'موجة حر', icon: Sun },
+  { value: 'flood', label: 'Flood', labelAr: 'فيضان', icon: CloudRain },
+  { value: 'storm', label: 'Storm', labelAr: 'عاصفة', icon: Wind },
+  { value: 'drought', label: 'Drought', labelAr: 'جفاف', icon: Droplets },
+  { value: 'other', label: 'Other', labelAr: 'أخرى', icon: Wind },
 ];
 
 const AREAS = [
@@ -31,10 +32,18 @@ const AREAS = [
   'Hebron', 'Nablus', 'Jenin', 'Tulkarm', 'Qalqilya', 'Gaza',
 ];
 
+// Quick templates for common hazard types - level is selected separately
 const QUICK_TEMPLATES = [
-  { hazard: 'heatwave', level: 'yellow' as AlertLevel, label: 'Heatwave' },
-  { hazard: 'drought', level: 'orange' as AlertLevel, label: 'Drought' },
-  { hazard: 'flood', level: 'red' as AlertLevel, label: 'Flood' },
+  { type: 'heatwave' as const, label: 'Heatwave', labelAr: 'موجة حر', icon: Flame },
+  { type: 'flood' as const, label: 'Flood', labelAr: 'فيضان', icon: CloudRain },
+  { type: 'drought' as const, label: 'Drought', labelAr: 'جفاف', icon: Droplets },
+];
+
+const SECTORS = [
+  { value: 'civil-defense', label: 'Civil Defense', labelAr: 'الدفاع المدني' },
+  { value: 'agriculture', label: 'Agriculture', labelAr: 'الزراعة' },
+  { value: 'water-authority', label: 'Water Authority', labelAr: 'سلطة المياه' },
+  { value: 'environment', label: 'Environment', labelAr: 'البيئة' },
 ];
 
 export default function CreateAlert() {
@@ -43,11 +52,13 @@ export default function CreateAlert() {
   const { alerts, addAlert, updateAlert, language, user } = useApp();
 
   const existingAlert = id ? alerts.find(a => a.id === id) : null;
+  const isEdit = !!existingAlert;
 
   const [formData, setFormData] = useState({
     hazardType: existingAlert?.hazardType || 'heatwave',
     level: existingAlert?.level || 'yellow' as AlertLevel,
-    title: existingAlert?.title || '',
+    title: existingAlert?.titleEn || '',
+    titleAr: existingAlert?.title || '',
     titleEn: existingAlert?.titleEn || '',
     affectedAreas: existingAlert?.affectedAreas || [] as string[],
     validFrom: existingAlert?.validFrom ? new Date(existingAlert.validFrom).toISOString().slice(0, 16) : new Date().toISOString().slice(0, 16),
@@ -56,10 +67,7 @@ export default function CreateAlert() {
     technicalDescEn: existingAlert?.technicalDescEn || '',
     publicAdviceAr: existingAlert?.publicAdviceAr || '',
     publicAdviceEn: existingAlert?.publicAdviceEn || '',
-    civilDefenseRec: existingAlert?.sectorRecommendations?.['civil-defense'] || '',
-    agricultureRec: existingAlert?.sectorRecommendations?.['agriculture'] || '',
-    waterRec: existingAlert?.sectorRecommendations?.['water-authority'] || '',
-    environmentRec: existingAlert?.sectorRecommendations?.['environment'] || '',
+    sectorRecommendations: existingAlert?.sectorRecommendations || {} as Record<string, string>,
   });
 
   // Markers state for map
@@ -68,8 +76,8 @@ export default function CreateAlert() {
   const handleQuickTemplate = (template: typeof QUICK_TEMPLATES[0]) => {
     setFormData(prev => ({
       ...prev,
-      hazardType: template.hazard as typeof prev.hazardType,
-      level: template.level,
+      hazardType: template.type,
+      // Keep the current level - user selects level separately
     }));
   };
 
@@ -82,15 +90,15 @@ export default function CreateAlert() {
     }));
   };
 
-  const handleSubmit = (status: 'draft' | 'pending' | 'issued') => {
+  const handleSubmit = (asDraft = false) => {
     if (!formData.titleEn || formData.affectedAreas.length === 0) {
-      toast.error('Please fill in required fields (Title and at least one affected area)');
+      toast.error(language === 'ar' ? 'الرجاء ملء الحقول المطلوبة' : 'Please fill required fields');
       return;
     }
 
     const alertData: Alert = {
       id: existingAlert?.id || `ALERT-${String(Date.now()).slice(-3)}`,
-      title: formData.title || formData.titleEn,
+      title: formData.titleAr || formData.titleEn,
       titleEn: formData.titleEn,
       hazardType: formData.hazardType as Alert['hazardType'],
       level: formData.level,
@@ -102,25 +110,20 @@ export default function CreateAlert() {
       technicalDescEn: formData.technicalDescEn,
       publicAdviceAr: formData.publicAdviceAr,
       publicAdviceEn: formData.publicAdviceEn,
-      sectorRecommendations: {
-        'civil-defense': formData.civilDefenseRec,
-        'agriculture': formData.agricultureRec,
-        'water-authority': formData.waterRec,
-        'environment': formData.environmentRec,
-      },
-      status,
+      sectorRecommendations: formData.sectorRecommendations,
+      status: asDraft ? 'draft' : 'pending',
       sectorResponses: existingAlert?.sectorResponses || [],
       createdBy: user?.name || 'Meteorology',
       createdAt: existingAlert?.createdAt || new Date().toISOString(),
       markers, // Include markers in alert data
     };
 
-    if (existingAlert) {
-      updateAlert(existingAlert.id, alertData);
-      toast.success('Alert updated successfully');
+    if (isEdit) {
+      updateAlert(alertData.id, alertData);
+      toast.success(language === 'ar' ? 'تم تحديث التنبيه' : 'Alert updated');
     } else {
       addAlert(alertData);
-      toast.success(status === 'issued' ? 'Alert sent successfully' : 'Alert saved as draft');
+      toast.success(language === 'ar' ? 'تم إنشاء التنبيه' : 'Alert created');
     }
 
     navigate('/admin-dashboard');
@@ -142,25 +145,34 @@ export default function CreateAlert() {
         </Button>
 
         <h1 className="page-title animate-fade-in">
-          {existingAlert
-            ? (language === 'en' ? 'Edit Alert' : 'تعديل التنبيه')
-            : (language === 'en' ? 'Create Alert' : 'إنشاء تنبيه')
+          {isEdit
+            ? (language === 'ar' ? 'تعديل التنبيه' : 'Edit Alert')
+            : (language === 'ar' ? 'إنشاء تنبيه' : 'Create Alert')
           }
         </h1>
 
-        {/* Quick Templates */}
+        {/* Quick Templates - Hazard Type Selection */}
         <div className="grid grid-cols-3 gap-4 mb-8">
-          {QUICK_TEMPLATES.map((template) => (
+          {QUICK_TEMPLATES.map(template => (
             <button
-              key={template.hazard}
+              key={template.type}
               onClick={() => handleQuickTemplate(template)}
-              className={`gov-card p-4 text-center transition-all hover:scale-105 cursor-pointer ${formData.hazardType === template.hazard && formData.level === template.level
-                ? 'ring-2 ring-primary'
-                : ''
-                }`}
+              className={cn(
+                'gov-card p-6 text-center transition-all hover:scale-105 cursor-pointer',
+                formData.hazardType === template.type
+                  ? 'ring-2 ring-primary'
+                  : ''
+              )}
             >
-              <AlertLevelBadge level={template.level} size="sm" />
-              <p className="mt-2 font-medium">{template.label}</p>
+              <div className="w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-3 bg-primary/10">
+                <template.icon className="w-6 h-6 text-primary" />
+              </div>
+              <div className="font-semibold">
+                {language === 'ar' ? template.labelAr : template.label}
+              </div>
+              <div className="text-xs text-muted-foreground mt-1">
+                {language === 'ar' ? 'اختر نوع الخطر' : 'Select hazard type'}
+              </div>
             </button>
           ))}
         </div>
@@ -240,60 +252,63 @@ export default function CreateAlert() {
                     <SelectTrigger className="gov-input">
                       <SelectValue />
                     </SelectTrigger>
-                    <SelectContent className="bg-card">
+                    <SelectContent className="bg-card border shadow-xl z-50">
                       {HAZARD_TYPES.map((type) => (
                         <SelectItem key={type.value} value={type.value}>
-                          {type.label}
+                          {language === 'ar' ? type.labelAr : type.label}
                         </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
                 </div>
 
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">
-                    {language === 'en' ? 'Alert Level' : 'مستوى التنبيه'}
+                <div>
+                  <label className="block text-sm font-medium mb-2">
+                    {language === 'ar' ? 'مستوى التنبيه' : 'Alert Level'} *
                   </label>
                   <div className="flex gap-2">
-                    {(['yellow', 'orange', 'red'] as AlertLevel[]).map((level) => (
+                    {(['yellow', 'orange', 'red'] as AlertLevel[]).map(level => (
                       <button
                         key={level}
                         type="button"
                         onClick={() => setFormData(prev => ({ ...prev, level }))}
-                        className={`flex-1 p-3 rounded-lg transition-all ${formData.level === level
-                          ? `alert-badge-${level} ring-2 ring-offset-2`
-                          : 'bg-muted hover:bg-muted/80'
-                          }`}
+                        className={cn(
+                          'flex-1 py-3 rounded-lg font-bold uppercase text-sm transition-all',
+                          formData.level === level ? 'ring-2 ring-offset-2' : 'opacity-60 hover:opacity-100',
+                          level === 'yellow' ? 'bg-alert-yellow text-foreground ring-alert-yellow' :
+                          level === 'orange' ? 'bg-alert-orange text-white ring-alert-orange' :
+                          'bg-alert-red text-white ring-alert-red'
+                        )}
                       >
-                        {level.charAt(0).toUpperCase() + level.slice(1)}
+                        {level}
                       </button>
                     ))}
                   </div>
                 </div>
               </div>
 
-              <div className="space-y-2">
-                <label className="text-sm font-medium">
-                  {language === 'en' ? 'Alert Title (English)' : 'عنوان التنبيه (إنجليزي)'} *
+              <div className="mt-4">
+                <label className="block text-sm font-medium mb-2">
+                  {language === 'ar' ? 'العنوان (إنجليزي)' : 'Title (English)'} *
                 </label>
                 <Input
                   value={formData.titleEn}
                   onChange={(e) => setFormData(prev => ({ ...prev, titleEn: e.target.value }))}
-                  placeholder="e.g., Severe Heatwave Warning - Central Region"
                   className="gov-input"
+                  placeholder="e.g., Severe Heatwave Warning"
                 />
               </div>
 
-              <div className="space-y-2">
-                <label className="text-sm font-medium">
-                  {language === 'en' ? 'Alert Title (Arabic)' : 'عنوان التنبيه (عربي)'}
+              <div className="mt-4">
+                <label className="block text-sm font-medium mb-2">
+                  {language === 'ar' ? 'العنوان (عربي)' : 'Title (Arabic)'}
                 </label>
                 <Input
-                  value={formData.title}
-                  onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
-                  placeholder="مثال: تحذير من موجة حرارة شديدة"
+                  value={formData.titleAr}
+                  onChange={(e) => setFormData(prev => ({ ...prev, titleAr: e.target.value }))}
                   className="gov-input"
                   dir="rtl"
+                  placeholder="مثال: تحذير من موجة حر شديدة"
                 />
               </div>
             </div>
@@ -304,18 +319,20 @@ export default function CreateAlert() {
                 {language === 'en' ? 'Geographic & Time Scope' : 'النطاق الجغرافي والزمني'}
               </h3>
 
-              <div className="space-y-2">
-                <label className="text-sm font-medium">
-                  {language === 'en' ? 'Affected Areas' : 'المناطق المتأثرة'} *
+              <div className="mb-4">
+                <label className="block text-sm font-medium mb-2">
+                  {language === 'ar' ? 'المناطق المتأثرة' : 'Affected Areas'} *
                 </label>
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                  {AREAS.map((area) => (
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                  {AREAS.map(area => (
                     <label
                       key={area}
-                      className={`flex items-center gap-2 p-3 rounded-lg border cursor-pointer transition-all ${formData.affectedAreas.includes(area)
-                        ? 'bg-primary/10 border-primary'
-                        : 'bg-card border-border hover:border-primary/50'
-                        }`}
+                      className={cn(
+                        'flex items-center gap-2 p-3 rounded-lg border cursor-pointer transition-all',
+                        formData.affectedAreas.includes(area)
+                          ? 'bg-primary/10 border-primary'
+                          : 'hover:bg-muted'
+                      )}
                     >
                       <Checkbox
                         checked={formData.affectedAreas.includes(area)}
@@ -359,107 +376,114 @@ export default function CreateAlert() {
                 {language === 'en' ? 'Description & Public Advice' : 'الوصف والنصائح العامة'}
               </h3>
 
-              <div className="space-y-2">
-                <label className="text-sm font-medium">
-                  {language === 'en' ? 'Technical Description (English)' : 'الوصف الفني (إنجليزي)'}
-                </label>
-                <Textarea
-                  value={formData.technicalDescEn}
-                  onChange={(e) => setFormData(prev => ({ ...prev, technicalDescEn: e.target.value }))}
-                  placeholder="Describe the weather event and its expected impact..."
-                  className="gov-input min-h-[100px]"
-                />
-              </div>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium mb-2">
+                    {language === 'ar' ? 'الوصف التقني (إنجليزي)' : 'Technical Description (English)'}
+                  </label>
+                  <Textarea
+                    value={formData.technicalDescEn}
+                    onChange={(e) => setFormData(prev => ({ ...prev, technicalDescEn: e.target.value }))}
+                    className="gov-input min-h-[100px]"
+                    placeholder="Detailed technical description of the hazard..."
+                  />
+                </div>
 
-              <div className="space-y-2">
-                <label className="text-sm font-medium">
-                  {language === 'en' ? 'Public Advice (English)' : 'النصائح العامة (إنجليزي)'}
-                </label>
-                <Textarea
-                  value={formData.publicAdviceEn}
-                  onChange={(e) => setFormData(prev => ({ ...prev, publicAdviceEn: e.target.value }))}
-                  placeholder="• Stay indoors during peak hours&#10;• Drink plenty of water&#10;• Check on vulnerable neighbors"
-                  className="gov-input min-h-[100px]"
-                />
+                <div>
+                  <label className="block text-sm font-medium mb-2">
+                    {language === 'ar' ? 'الوصف التقني (عربي)' : 'Technical Description (Arabic)'}
+                  </label>
+                  <Textarea
+                    value={formData.technicalDescAr}
+                    onChange={(e) => setFormData(prev => ({ ...prev, technicalDescAr: e.target.value }))}
+                    className="gov-input min-h-[100px]"
+                    dir="rtl"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium mb-2">
+                    {language === 'ar' ? 'نصائح للجمهور (إنجليزي)' : 'Public Advice (English)'}
+                  </label>
+                  <Textarea
+                    value={formData.publicAdviceEn}
+                    onChange={(e) => setFormData(prev => ({ ...prev, publicAdviceEn: e.target.value }))}
+                    className="gov-input min-h-[100px]"
+                    placeholder="• Stay indoors&#10;• Drink plenty of water..."
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium mb-2">
+                    {language === 'ar' ? 'نصائح للجمهور (عربي)' : 'Public Advice (Arabic)'}
+                  </label>
+                  <Textarea
+                    value={formData.publicAdviceAr}
+                    onChange={(e) => setFormData(prev => ({ ...prev, publicAdviceAr: e.target.value }))}
+                    className="gov-input min-h-[100px]"
+                    dir="rtl"
+                  />
+                </div>
               </div>
             </div>
 
             {/* Sector Recommendations */}
             <div className="gov-card space-y-4">
               <h3 className="font-semibold text-lg border-b pb-2">
-                {language === 'en' ? 'Sector Recommendations' : 'توصيات القطاعات'}
+                {language === 'ar' ? 'توصيات القطاعات' : 'Sector Recommendations'}
               </h3>
 
-              <div className="grid sm:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Civil Defense</label>
-                  <Textarea
-                    value={formData.civilDefenseRec}
-                    onChange={(e) => setFormData(prev => ({ ...prev, civilDefenseRec: e.target.value }))}
-                    placeholder="Recommended actions for Civil Defense..."
-                    className="gov-input min-h-[80px]"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Agriculture</label>
-                  <Textarea
-                    value={formData.agricultureRec}
-                    onChange={(e) => setFormData(prev => ({ ...prev, agricultureRec: e.target.value }))}
-                    placeholder="Recommended actions for Agriculture..."
-                    className="gov-input min-h-[80px]"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Water Authority</label>
-                  <Textarea
-                    value={formData.waterRec}
-                    onChange={(e) => setFormData(prev => ({ ...prev, waterRec: e.target.value }))}
-                    placeholder="Recommended actions for Water Authority..."
-                    className="gov-input min-h-[80px]"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Environment</label>
-                  <Textarea
-                    value={formData.environmentRec}
-                    onChange={(e) => setFormData(prev => ({ ...prev, environmentRec: e.target.value }))}
-                    placeholder="Recommended actions for Environment..."
-                    className="gov-input min-h-[80px]"
-                  />
-                </div>
+              <div className="space-y-4">
+                {SECTORS.map(sector => (
+                  <div key={sector.value}>
+                    <label className="block text-sm font-medium mb-2">
+                      {language === 'ar' ? sector.labelAr : sector.label}
+                    </label>
+                    <Textarea
+                      value={formData.sectorRecommendations[sector.value] || ''}
+                      onChange={(e) => setFormData(prev => ({
+                        ...prev,
+                        sectorRecommendations: {
+                          ...prev.sectorRecommendations,
+                          [sector.value]: e.target.value,
+                        }
+                      }))}
+                      className="gov-input"
+                      placeholder={`Recommended actions for ${sector.label}...`}
+                    />
+                  </div>
+                ))}
               </div>
             </div>
 
             {/* Action Buttons */}
-            <div className="flex flex-wrap gap-3 justify-end">
+            <div className="flex justify-end gap-4 mt-8 pb-8">
               <Button
                 variant="outline"
                 onClick={() => navigate(`/public-alert/${existingAlert?.id || 'preview'}`)}
                 className="btn-gov-secondary"
               >
-                <Eye className="w-4 h-4" />
-                {language === 'en' ? 'Preview' : 'معاينة'}
+                <Eye className="w-4 h-4 mr-2" />
+                {language === 'ar' ? 'معاينة' : 'Preview'}
               </Button>
               <Button
                 variant="outline"
                 onClick={() => navigate('/admin-dashboard')}
                 className="btn-gov-secondary"
               >
-                {language === 'en' ? 'Cancel' : 'إلغاء'}
+                {language === 'ar' ? 'إلغاء' : 'Cancel'}
               </Button>
               <Button
-                onClick={() => handleSubmit('draft')}
+                variant="outline"
+                onClick={() => handleSubmit(true)}
                 className="btn-gov-secondary"
               >
-                <Save className="w-4 h-4" />
-                {language === 'en' ? 'Save as Draft' : 'حفظ كمسودة'}
+                <Save className="w-4 h-4 mr-2" />
+                {language === 'ar' ? 'حفظ كمسودة' : 'Save as Draft'}
               </Button>
-              <Button
-                onClick={() => handleSubmit('issued')}
-                className="btn-gov-primary"
-              >
-                <Send className="w-4 h-4" />
-                {language === 'en' ? 'Send Alert' : 'إرسال التنبيه'}
+              <Button onClick={() => handleSubmit(false)} className="btn-gov-primary">
+                <Send className="w-4 h-4 mr-2" />
+                {language === 'ar' ? 'إرسال التنبيه' : 'Send Alert'}
               </Button>
             </div>
           </div>

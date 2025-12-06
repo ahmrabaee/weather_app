@@ -50,10 +50,10 @@ This document analyzes 6 interface mockups for the Palestine Early Warning Syste
 
 ### Main Section: "Create Alert"
 
-#### Hazard Type Selection (Color-coded buttons)
-1. **Heatwave** - Yellow (#F4C542) with "Yellow" label
-2. **Drought** - Orange (#F39C12) with "Orange" label
-3. **Flood** - Red (#DC3545) with "Red" label
+#### Alert Level Selection (Color-coded buttons)
+1. **Yellow** (#F4C542) - Low severity level (can be used with any hazard type)
+2. **Orange** (#F39C12) - Medium severity level (can be used with any hazard type)
+3. **Red** (#DC3545) - High severity level (can be used with any hazard type)
 
 #### Map Component
 - Light blue water/sea representation

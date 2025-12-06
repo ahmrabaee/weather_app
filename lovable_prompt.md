@@ -386,12 +386,12 @@ Destructive Button:
    - Page title: "Create Alert" or "Edit Alert"
    - Navy blue top bar as usual
 
-2. **Quick Alert Type Pills** (Top of form):
-   - Three large, colored buttons showing quick templates
-   - Yellow box: "Heatwave | Yellow"
-   - Orange box: "Drought | Orange"
-   - Red box: "Flood | Red"
-   - Click to auto-fill some fields
+2. **Quick Alert Level Pills** (Top of form):
+   - Three large, colored buttons showing severity level templates
+   - Yellow box: "Yellow" (low severity)
+   - Orange box: "Orange" (medium severity)
+   - Red box: "Red" (high severity)
+   - Click to set alert level (hazard type is selected separately)
 
 3. **Map Preview Section**:
    - Light blue background box
