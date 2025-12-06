@@ -2,7 +2,7 @@ import { useState, useMemo } from 'react';
 import { Header } from '@/components/Header';
 import { AlertLevelBadge } from '@/components/AlertLevelBadge';
 import { StatusBadge } from '@/components/StatusBadge';
-import { PalestineMap } from '@/components/PalestineMap';
+import { MapComponent } from '@/components/MapComponent';
 import { useApp, Alert, SectorStatus, ROLE_NAMES } from '@/contexts/AppContext';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -205,10 +205,11 @@ export default function SectorDashboard() {
                     {language === 'en' ? 'Affected Areas' : 'المناطق المتأثرة'}
                   </h3>
                   <div className="grid md:grid-cols-2 gap-4">
-                    <PalestineMap
-                      affectedAreas={selectedAlert.affectedAreas}
-                      level={selectedAlert.level}
-                      className="h-[200px]"
+                    <MapComponent
+                      mode="view"
+                      markers={selectedAlert.markers || []}
+                      selectedAlertLevel={selectedAlert.level}
+                      className="h-[400px]"
                     />
                     <div className="flex flex-wrap gap-2 content-start">
                       {selectedAlert.affectedAreas.map((area) => (

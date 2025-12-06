@@ -7,18 +7,20 @@ interface PalestineMapProps {
   className?: string;
 }
 
-const REGIONS: Record<string, { path: string; cx: number; cy: number }> = {
-  'Jenin': { path: 'M70,30 L90,25 L100,40 L85,55 L65,50 Z', cx: 80, cy: 40 },
-  'Tulkarm': { path: 'M55,50 L75,45 L80,60 L65,75 L50,70 Z', cx: 65, cy: 60 },
-  'Nablus': { path: 'M80,55 L100,50 L110,70 L95,85 L75,80 Z', cx: 90, cy: 67 },
-  'Qalqilya': { path: 'M45,70 L60,65 L65,80 L55,90 L40,85 Z', cx: 52, cy: 77 },
-  'Ramallah': { path: 'M70,85 L95,80 L105,100 L90,115 L65,110 Z', cx: 85, cy: 97 },
-  'Al-Bireh': { path: 'M95,95 L110,92 L115,108 L105,118 L90,115 Z', cx: 102, cy: 105 },
-  'Jericho': { path: 'M110,90 L135,85 L145,110 L130,130 L105,125 Z', cx: 125, cy: 105 },
-  'Jerusalem': { path: 'M75,115 L100,110 L105,130 L90,145 L70,140 Z', cx: 87, cy: 127 },
-  'Bethlehem': { path: 'M75,145 L100,140 L105,160 L90,175 L70,170 Z', cx: 87, cy: 157 },
-  'Hebron': { path: 'M65,175 L95,170 L100,200 L80,220 L55,215 Z', cx: 77, cy: 195 },
-  'Gaza': { path: 'M20,180 L40,175 L45,230 L30,260 L15,255 Z', cx: 30, cy: 217 },
+// إحداثيات المناطق على الخريطة (نسبة مئوية من الصورة)
+// هذه الإحداثيات تستند إلى صورة final-map.png
+const REGION_COORDINATES: Record<string, { x: number; y: number; width: number; height: number }> = {
+  'Jenin': { x: 15, y: 8, width: 12, height: 10 },
+  'Tulkarm': { x: 10, y: 15, width: 10, height: 12 },
+  'Nablus': { x: 18, y: 18, width: 12, height: 14 },
+  'Qalqilya': { x: 8, y: 22, width: 8, height: 10 },
+  'Ramallah': { x: 20, y: 28, width: 10, height: 12 },
+  'Al-Bireh': { x: 25, y: 30, width: 8, height: 10 },
+  'Jericho': { x: 32, y: 28, width: 12, height: 15 },
+  'Jerusalem': { x: 22, y: 38, width: 10, height: 12 },
+  'Bethlehem': { x: 22, y: 48, width: 10, height: 12 },
+  'Hebron': { x: 20, y: 58, width: 12, height: 15 },
+  'Gaza': { x: 5, y: 55, width: 10, height: 20 },
 };
 
 export function PalestineMap({ affectedAreas, level, className }: PalestineMapProps) {
@@ -29,47 +31,43 @@ export function PalestineMap({ affectedAreas, level, className }: PalestineMapPr
   };
 
   return (
-    <div className={cn('bg-secondary/50 rounded-xl p-6', className)}>
-      <svg viewBox="0 0 160 280" className="w-full h-auto max-h-[400px]">
-        {/* Background outline */}
-        <defs>
-          <linearGradient id="mapGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" stopColor="hsl(var(--primary))" stopOpacity="0.1" />
-            <stop offset="100%" stopColor="hsl(var(--primary))" stopOpacity="0.05" />
-          </linearGradient>
-        </defs>
-
-        {/* Regions */}
-        {Object.entries(REGIONS).map(([name, { path, cx, cy }]) => {
-          const isAffected = affectedAreas.includes(name);
-          return (
-            <g key={name}>
-              <path
-                d={path}
-                fill={isAffected ? levelColors[level] : 'hsl(var(--muted))'}
-                stroke="hsl(var(--border))"
-                strokeWidth="1.5"
-                className={cn(
-                  'transition-all duration-300',
-                  isAffected && 'animate-pulse-alert'
-                )}
-                opacity={isAffected ? 0.9 : 0.5}
+    <div className={cn('bg-secondary/50 rounded-xl p-6 relative overflow-hidden', className)}>
+      {/* Map Image Container */}
+      <div className="relative w-full h-full min-h-[200px]">
+        <img
+          src="/images/final-map.png"
+          alt="Palestine Map"
+          className="w-full h-full object-contain"
+          draggable={false}
+        />
+        
+        {/* Overlay for affected areas */}
+        <div className="absolute inset-0 pointer-events-none">
+          {Object.entries(REGION_COORDINATES).map(([name, coords]) => {
+            const isAffected = affectedAreas.includes(name);
+            if (!isAffected) return null;
+            
+            return (
+              <div
+                key={name}
+                className="absolute transition-all duration-300 animate-pulse-alert"
+                style={{
+                  left: `${coords.x}%`,
+                  top: `${coords.y}%`,
+                  width: `${coords.width}%`,
+                  height: `${coords.height}%`,
+                  backgroundColor: levelColors[level],
+                  opacity: 0.5,
+                  borderRadius: '4px',
+                  border: `2px solid ${levelColors[level]}`,
+                  boxShadow: `0 0 8px ${levelColors[level]}40`,
+                }}
+                title={name}
               />
-              <text
-                x={cx}
-                y={cy}
-                textAnchor="middle"
-                fontSize="6"
-                fill={isAffected ? 'hsl(var(--foreground))' : 'hsl(var(--muted-foreground))'}
-                fontWeight={isAffected ? '600' : '400'}
-                className="pointer-events-none"
-              >
-                {name}
-              </text>
-            </g>
-          );
-        })}
-      </svg>
+            );
+          })}
+        </div>
+      </div>
     </div>
   );
 }
