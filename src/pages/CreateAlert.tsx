@@ -4,6 +4,7 @@ import { Header } from '@/components/Header';
 import { AlertLevelBadge } from '@/components/AlertLevelBadge';
 import { MapComponent } from '@/components/MapComponent';
 import { useApp, Alert, AlertLevel, Marker } from '@/contexts/AppContext';
+import { HAZARD_LEGENDS } from '@/types/alert';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -23,7 +24,7 @@ const HAZARD_TYPES = [
   { value: 'heatwave', label: 'Heatwave', labelAr: 'موجة حر', icon: Sun },
   { value: 'flood', label: 'Flood', labelAr: 'فيضان', icon: CloudRain },
   { value: 'storm', label: 'Storm', labelAr: 'عاصفة', icon: Wind },
-  { value: 'drought', label: 'Drought', labelAr: 'جفاف', icon: Droplets },
+  { value: 'soil-moisture', label: 'Soil Moisture', labelAr: 'رطوبة التربة', icon: Droplets },
   { value: 'other', label: 'Other', labelAr: 'أخرى', icon: Wind },
 ];
 
@@ -36,7 +37,7 @@ const AREAS = [
 const QUICK_TEMPLATES = [
   { type: 'heatwave' as const, label: 'Heatwave', labelAr: 'موجة حر', icon: Flame },
   { type: 'flood' as const, label: 'Flood', labelAr: 'فيضان', icon: CloudRain },
-  { type: 'drought' as const, label: 'Drought', labelAr: 'جفاف', icon: Droplets },
+  { type: 'soil-moisture' as const, label: 'Soil Moisture', labelAr: 'رطوبة التربة', icon: Droplets },
 ];
 
 const SECTORS = [
@@ -203,29 +204,54 @@ export default function CreateAlert() {
               />
               <p className="text-xs text-muted-foreground mt-2">
                 {language === 'en'
-                  ? `Click map to place ${formData.level} markers. ${markers.length} marker(s) placed.`
-                  : `انقر على الخريطة لإضافة نقاط ${formData.level}. ${markers.length} نقطة موضوعة.`}
+                  ? 'Click regions to select them'
+                  : 'انقر على المناطق لتحديدها'}
               </p>
-              {/* Selected Areas List */}
-              {formData.affectedAreas.length > 0 && (
-                <div className="mt-4 space-y-2">
-                  <p className="text-sm font-medium text-muted-foreground">
-                    {language === 'en' ? 'Selected Areas:' : 'المناطق المحددة:'}
+
+              {/* Alert Level Legend */}
+              {HAZARD_LEGENDS[formData.hazardType as keyof typeof HAZARD_LEGENDS]?.[formData.level] && (
+                <div className={cn(
+                  'mt-4 p-4 rounded-xl border-2',
+                  formData.level === 'red' ? 'border-alert-red bg-alert-red/5' :
+                    formData.level === 'orange' ? 'border-alert-orange bg-alert-orange/5' :
+                      'border-alert-yellow bg-alert-yellow/5'
+                )}>
+                  <div className="flex items-center gap-2 mb-3">
+                    <div className={cn(
+                      'w-3 h-3 rounded-full',
+                      formData.level === 'red' ? 'bg-alert-red' :
+                        formData.level === 'orange' ? 'bg-alert-orange' :
+                          'bg-alert-yellow'
+                    )} />
+                    <h4 className="font-bold text-sm">
+                      {language === 'ar' ? 'مستوى التنبيه' : 'Alert Level Legend'}
+                    </h4>
+                  </div>
+                  <p className="text-sm leading-relaxed text-foreground mb-3">
+                    {language === 'ar'
+                      ? HAZARD_LEGENDS[formData.hazardType as keyof typeof HAZARD_LEGENDS]?.[formData.level]?.ar
+                      : HAZARD_LEGENDS[formData.hazardType as keyof typeof HAZARD_LEGENDS]?.[formData.level]?.en
+                    }
                   </p>
-                  <div className="flex flex-wrap gap-2">
-                    {formData.affectedAreas.map((area) => (
-                      <span
-                        key={area}
-                        className={`px-2 py-1 rounded text-xs font-medium ${formData.level === 'yellow'
-                          ? 'bg-alert-yellow text-yellow-900'
-                          : formData.level === 'orange'
-                            ? 'bg-alert-orange text-orange-900'
-                            : 'bg-alert-red text-red-900'
-                          }`}
-                      >
-                        {area}
+                  <div className="text-xs text-muted-foreground space-y-1">
+                    <div>
+                      <strong>{language === 'ar' ? 'نوع الخطر:' : 'Hazard Type:'}</strong>{' '}
+                      {language === 'ar'
+                        ? HAZARD_TYPES.find(h => h.value === formData.hazardType)?.labelAr
+                        : HAZARD_TYPES.find(h => h.value === formData.hazardType)?.label
+                      }
+                    </div>
+                    <div>
+                      <strong>{language === 'ar' ? 'المستوى:' : 'Level:'}</strong>{' '}
+                      <span className="capitalize">
+                        {formData.level}
+                        {' ('}
+                        {formData.level === 'yellow' ? (language === 'ar' ? 'كن حذراً' : 'Be Cautious') :
+                          formData.level === 'orange' ? (language === 'ar' ? 'كن مستعداً' : 'Be Prepared') :
+                            (language === 'ar' ? 'اتخذ إجراء' : 'Take Action')}
+                        {')'}
                       </span>
-                    ))}
+                    </div>
                   </div>
                 </div>
               )}
@@ -276,8 +302,8 @@ export default function CreateAlert() {
                           'flex-1 py-3 rounded-lg font-bold uppercase text-sm transition-all',
                           formData.level === level ? 'ring-2 ring-offset-2' : 'opacity-60 hover:opacity-100',
                           level === 'yellow' ? 'bg-alert-yellow text-foreground ring-alert-yellow' :
-                          level === 'orange' ? 'bg-alert-orange text-white ring-alert-orange' :
-                          'bg-alert-red text-white ring-alert-red'
+                            level === 'orange' ? 'bg-alert-orange text-white ring-alert-orange' :
+                              'bg-alert-red text-white ring-alert-red'
                         )}
                       >
                         {level}
@@ -311,6 +337,7 @@ export default function CreateAlert() {
                   placeholder="مثال: تحذير من موجة حر شديدة"
                 />
               </div>
+
             </div>
 
             {/* Geographic & Time Scope */}

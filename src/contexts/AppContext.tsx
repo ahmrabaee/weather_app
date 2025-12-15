@@ -23,7 +23,7 @@ export interface Alert {
   id: string;
   title: string;
   titleEn: string;
-  hazardType: 'flood' | 'heatwave' | 'storm' | 'drought' | 'other';
+  hazardType: 'flood' | 'heatwave' | 'storm' | 'soil-moisture' | 'other';
   level: AlertLevel;
   issueTime: string;
   validFrom: string;
@@ -137,20 +137,20 @@ const SAMPLE_ALERTS: Alert[] = [
   },
   {
     id: 'ALERT-003',
-    title: 'تحذير من جفاف زراعي',
-    titleEn: 'Agricultural Drought Warning',
-    hazardType: 'drought',
+    title: 'تحذير من انخفاض رطوبة التربة',
+    titleEn: 'Soil Moisture Level Warning',
+    hazardType: 'soil-moisture',
     level: 'yellow',
     issueTime: new Date().toISOString(),
     validFrom: new Date().toISOString(),
     validTo: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString(),
     affectedAreas: ['Nablus', 'Jenin', 'Tulkarm'],
-    technicalDescAr: 'فترة جفاف ممتدة متوقعة. نقص كبير في هطول الأمطار سيؤثر على المحاصيل الزراعية.',
-    technicalDescEn: 'Extended dry period expected. Significant rainfall deficit will affect agricultural crops.',
+    technicalDescAr: 'مستويات رطوبة التربة أقل من المعدل الطبيعي في المنطقة الشمالية. التأثير على المحاصيل الزراعية متوقع.',
+    technicalDescEn: 'Soil moisture levels below normal in the northern region. Agricultural impact expected.',
     publicAdviceAr: '• حافظ على المياه\n• قلل من استخدام المياه غير الضروري\n• أبلغ عن تسربات المياه',
     publicAdviceEn: '• Conserve water\n• Reduce non-essential water usage\n• Report water leaks',
     sectorRecommendations: {
-      'agriculture': 'Implement water rationing for irrigation. Advise on drought-resistant practices.',
+      'agriculture': 'Monitor irrigation schedules. Advise on water-efficient practices.',
       'water-authority': 'Implement water conservation measures. Monitor ground water levels.',
     },
     status: 'pending',
