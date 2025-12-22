@@ -34,9 +34,10 @@ const HAZARD_TYPES = [
 ];
 
 // Predefined areas
+// Predefined areas
 const AREAS = [
-  'Ramallah', 'Al-Bireh', 'Jericho', 'Jerusalem', 'Bethlehem',
-  'Hebron', 'Nablus', 'Jenin', 'Tulkarm', 'Qalqilya', 'Gaza',
+  'Al-Quds (Jerusalem)', 'Hebron', 'Ramallah & Al-Bireh', 'Nablus', 'Jenin',
+  'Bethlehem', 'Tulkarm', 'Qalqilya', 'Tubas', 'Salfit', 'Jericho', 'Gaza Strip'
 ];
 
 const QUICK_TEMPLATES = [

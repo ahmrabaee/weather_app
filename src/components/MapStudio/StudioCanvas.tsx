@@ -226,17 +226,14 @@ export function StudioCanvas({
                                 if (onSelectLayer) onSelectLayer(layer.id);
                             }}
                         >
-                            {/* Colored Mask Image */}
-                            <div
-                                className="w-full h-full"
+                            {/* Direct Image Rendering - Shows baked in labels */}
+                            <img
+                                src={layer.src}
+                                alt={layer.id}
+                                className="w-full h-full object-contain pointer-events-none select-none"
+                                draggable={false}
                                 style={{
-                                    aspectRatio: '1/1',
-                                    maskImage: `url(${layer.src})`,
-                                    maskSize: 'contain',
-                                    maskRepeat: 'no-repeat',
-                                    maskPosition: 'center',
-                                    backgroundColor: getLevelColor(layer.level),
-                                    opacity: 0.9
+                                    opacity: layer.opacity || 0.9,
                                 }}
                             />
 

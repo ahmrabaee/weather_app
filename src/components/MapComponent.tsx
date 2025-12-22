@@ -207,15 +207,11 @@ export function MapComponent({
                                         transform: `rotate(${layer.rotation}deg)`,
                                     }}
                                 >
-                                    <div
-                                        className="w-full h-full"
+                                    <img
+                                        src={layer.src}
+                                        alt={layer.id}
+                                        className="w-full h-full object-contain"
                                         style={{
-                                            aspectRatio: '1/1',
-                                            maskImage: `url(${layer.src})`,
-                                            maskSize: 'contain',
-                                            maskRepeat: 'no-repeat',
-                                            maskPosition: 'center',
-                                            backgroundColor: getLevelColor(layer.level),
                                             opacity: 0.9
                                         }}
                                     />

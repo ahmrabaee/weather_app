@@ -1,21 +1,17 @@
 import React, { useState } from 'react';
 import { cn } from '@/lib/utils';
-import { Search, AlertTriangle } from 'lucide-react';
+import { Search } from 'lucide-react';
+import { GOVERNORATES, OVERLAY_ASSETS } from './assets';
 
 interface StudioSidebarProps {
     onAddLayer: (assetId: string, level: 'yellow' | 'orange' | 'red', src: string) => void;
 }
 
-const ASSETS = [
-    { id: 'hebron', name: 'Hebron', src: '/images/overlays/hebron.png' },
-    // Add more assets here
-];
-
 export function StudioSidebar({ onAddLayer }: StudioSidebarProps) {
     const [activeTab, setActiveTab] = useState<'yellow' | 'orange' | 'red'>('yellow');
     const [search, setSearch] = useState('');
 
-    const filteredAssets = ASSETS.filter(a => a.name.toLowerCase().includes(search.toLowerCase()));
+    const filteredAssets = GOVERNORATES.filter(a => a.name.toLowerCase().includes(search.toLowerCase()));
 
     const getLevelColor = (level: string) => {
         switch (level) {
@@ -68,31 +64,27 @@ export function StudioSidebar({ onAddLayer }: StudioSidebarProps) {
                     Click a governorate to add it to the map
                 </p>
                 <div className="grid grid-cols-2 gap-2">
-                    {filteredAssets.map(asset => (
-                        <button
-                            key={asset.id}
-                            onClick={() => onAddLayer(asset.id, activeTab, asset.src)}
-                            className="p-3 bg-slate-800/50 hover:bg-slate-700/50 rounded-lg transition-all hover:scale-105 border border-slate-700/50"
-                        >
-                            <div
-                                className="w-full h-16 mb-2 flex items-center justify-center"
-                                style={{
-                                    maskImage: `url(${asset.src})`,
-                                    WebkitMaskImage: `url(${asset.src})`,
-                                    maskSize: 'contain',
-                                    WebkitMaskSize: 'contain',
-                                    maskRepeat: 'no-repeat',
-                                    WebkitMaskRepeat: 'no-repeat',
-                                    maskPosition: 'center',
-                                    WebkitMaskPosition: 'center',
-                                    backgroundColor: getLevelColor(activeTab),
-                                }}
-                            />
-                            <p className="text-xs text-primary-foreground/80 text-center truncate">
-                                {asset.name}
-                            </p>
-                        </button>
-                    ))}
+                    {filteredAssets.map(asset => {
+                        const assetSrc = OVERLAY_ASSETS[asset.id]?.[activeTab] || '';
+                        return (
+                            <button
+                                key={asset.id}
+                                onClick={() => onAddLayer(asset.id, activeTab, assetSrc)}
+                                className="p-3 bg-slate-800/50 hover:bg-slate-700/50 rounded-lg transition-all hover:scale-105 border border-slate-700/50"
+                            >
+                                <div className="w-full h-16 mb-2 flex items-center justify-center">
+                                    <img
+                                        src={assetSrc}
+                                        alt={asset.name}
+                                        className="max-w-full max-h-full object-contain"
+                                    />
+                                </div>
+                                <p className="text-xs text-primary-foreground/80 text-center truncate">
+                                    {asset.name}
+                                </p>
+                            </button>
+                        );
+                    })}
                 </div>
             </div>
         </div>
