@@ -255,6 +255,11 @@
     @apply text-3xl sm:text-4xl font-bold text-foreground mb-8;
   }
 
+  /* Studio Canvas Background */
+  .studio-canvas {
+    background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%);
+  }
+
   /* Alert Banner */
   .alert-banner-yellow {
     @apply w-full py-12 px-6 text-center;

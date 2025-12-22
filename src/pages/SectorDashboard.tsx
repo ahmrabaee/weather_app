@@ -3,6 +3,7 @@ import { Header } from '@/components/Header';
 import { AlertLevelBadge } from '@/components/AlertLevelBadge';
 import { StatusBadge } from '@/components/StatusBadge';
 import { MapComponent } from '@/components/MapComponent';
+import { StudioCanvas } from '@/components/MapStudio/StudioCanvas';
 import { useApp, Alert, SectorStatus, ROLE_NAMES } from '@/contexts/AppContext';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -123,8 +124,8 @@ export default function SectorDashboard() {
                     key={alert.id}
                     onClick={() => handleSelectAlert(alert.id)}
                     className={`w-full text-start gov-card p-4 transition-all hover:scale-[1.02] ${selectedAlertId === alert.id
-                        ? 'ring-2 ring-primary border-l-[6px] border-l-primary bg-primary/5'
-                        : ''
+                      ? 'ring-2 ring-primary border-l-[6px] border-l-primary bg-primary/5'
+                      : ''
                       }`}
                   >
                     <div className="flex items-start justify-between gap-2 mb-2">
@@ -204,13 +205,19 @@ export default function SectorDashboard() {
                     <MapPin className="w-5 h-5 text-primary" />
                     {language === 'en' ? 'Affected Areas' : 'المناطق المتأثرة'}
                   </h3>
-                  <div className="grid md:grid-cols-2 gap-4">
-                    <MapComponent
-                      mode="view"
-                      markers={selectedAlert.markers || []}
-                      selectedAlertLevel={selectedAlert.level}
-                      className="h-[400px]"
-                    />
+                  <div className="space-y-4">
+                    {selectedAlert.mapComposition ? (
+                      <div className="flex flex-col items-center justify-center p-6 bg-slate-50 rounded-xl border border-slate-200 shadow-inner">
+                        <div className="relative group shadow-2xl rounded-2xl overflow-hidden border border-slate-200 bg-white">
+                          <StudioCanvas layers={selectedAlert.mapComposition.layers} readOnly />
+                        </div>
+                      </div>
+                    ) : (
+                      <MapComponent
+                        mode="view"
+                        className="h-[400px] rounded-xl overflow-hidden shadow-inner"
+                      />
+                    )}
                     <div className="flex flex-wrap gap-2 content-start">
                       {selectedAlert.affectedAreas.map((area) => (
                         <span

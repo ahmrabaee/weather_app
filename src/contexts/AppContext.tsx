@@ -39,6 +39,7 @@ export interface Alert {
   createdBy: string;
   createdAt: string;
   markers?: Marker[]; // NEW: Map markers for alert visualization
+  mapComposition?: MapComposition;
 }
 
 export interface ActivityLog {
@@ -54,6 +55,8 @@ interface User {
   name: string;
 }
 
+import { MapComposition } from '@/types/mapStudio';
+
 interface AppContextType {
   user: User | null;
   setUser: (user: User | null) => void;
@@ -67,6 +70,8 @@ interface AppContextType {
   loadSampleData: () => void;
   language: 'ar' | 'en';
   setLanguage: (lang: 'ar' | 'en') => void;
+  mapComposition: MapComposition;
+  setMapComposition: (composition: MapComposition) => void;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -233,6 +238,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
     addLog({ role: user?.role || 'meteorology', action: 'Loaded sample alerts data' });
   };
 
+  const [mapComposition, setMapComposition] = useState<MapComposition>({ layers: [] });
+
   return (
     <AppContext.Provider value={{
       user,
@@ -247,6 +254,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
       loadSampleData,
       language,
       setLanguage,
+      mapComposition,
+      setMapComposition,
     }}>
       {children}
     </AppContext.Provider>

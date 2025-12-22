@@ -1,6 +1,7 @@
 import { useParams, useNavigate } from 'react-router-dom';
 import { useApp } from '@/contexts/AppContext';
 import { MapComponent } from '@/components/MapComponent';
+import { StudioCanvas } from '@/components/MapStudio/StudioCanvas';
 import { Button } from '@/components/ui/button';
 import { format } from 'date-fns';
 import { AlertTriangle, Calendar, MapPin, CheckCircle, Info, ArrowLeft } from 'lucide-react';
@@ -146,31 +147,64 @@ export default function PublicAlert() {
               {language === 'en' ? 'Where?' : 'أين؟'}
             </h2>
           </div>
-          <div className="grid md:grid-cols-2 gap-6">
-            <MapComponent
-              mode="view"
-              markers={alert.markers || []}
-              selectedAlertLevel={alert.level}
-              className="min-h-[400px]"
-            />
-            <div>
-              <p className="text-sm text-muted-foreground mb-3">
-                {language === 'en' ? 'Affected Areas:' : 'المناطق المتأثرة:'}
-              </p>
-              <div className="flex flex-wrap gap-2">
-                {alert.affectedAreas.map((area) => (
-                  <span
-                    key={area}
-                    className={cn(
-                      'px-4 py-2 rounded-full font-medium',
-                      `alert-badge-${alert.level}`
-                    )}
-                  >
-                    {area}
-                  </span>
-                ))}
+          <div className="space-y-6">
+            {alert.mapComposition ? (
+              <div className="flex flex-col items-center justify-center p-6 bg-slate-50 rounded-2xl border-2 border-dashed border-slate-200 animate-in fade-in duration-1000">
+                <div className="relative group shadow-2xl rounded-2xl overflow-hidden border border-slate-200 bg-white">
+                  <StudioCanvas layers={alert.mapComposition.layers} readOnly />
+                </div>
+                <p className="mt-4 text-sm text-muted-foreground flex items-center gap-2">
+                  <MapPin className="w-4 h-4" />
+                  {language === 'en' ? 'Geographic Coverage Map' : 'خريطة التغطية الجغرافية'}
+                </p>
               </div>
-            </div>
+            ) : (
+              <div className="grid md:grid-cols-2 gap-6">
+                <MapComponent
+                  mode="view"
+                  className="min-h-[400px] rounded-xl overflow-hidden shadow-inner"
+                />
+                <div>
+                  <p className="text-sm text-muted-foreground mb-3">
+                    {language === 'en' ? 'Affected Areas:' : 'المناطق المتأثرة:'}
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    {alert.affectedAreas.map((area) => (
+                      <span
+                        key={area}
+                        className={cn(
+                          'px-4 py-2 rounded-full font-medium',
+                          `alert-badge-${alert.level}`
+                        )}
+                      >
+                        {area}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {alert.mapComposition && (
+              <div className="gov-card">
+                <p className="text-sm text-muted-foreground mb-3 font-semibold">
+                  {language === 'en' ? 'Detailed Affected Areas:' : 'المناطق المتأثرة بالتفصيل:'}
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {alert.affectedAreas.map((area) => (
+                    <span
+                      key={area}
+                      className={cn(
+                        'px-4 py-2 rounded-full font-medium',
+                        `alert-badge-${alert.level}`
+                      )}
+                    >
+                      {area}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         </div>
 

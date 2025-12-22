@@ -1,13 +1,11 @@
-import { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Header } from '@/components/Header';
 import { AlertLevelBadge } from '@/components/AlertLevelBadge';
-import { MapComponent } from '@/components/MapComponent';
-import { useApp, Alert, AlertLevel, Marker } from '@/contexts/AppContext';
-import { HAZARD_LEGENDS } from '@/types/alert';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
+import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import {
   Select,
@@ -16,10 +14,17 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { ArrowLeft, Sun, CloudRain, Wind, Droplets, Send, Save, Eye, Trash2, Flame } from 'lucide-react';
+import { useApp, Alert, AlertLevel } from '@/contexts/AppContext';
+import { MapComponent } from '@/components/MapComponent';
+import { StudioSidebar } from '@/components/MapStudio/StudioSidebar';
+import { StudioCanvas } from '@/components/MapStudio/StudioCanvas';
+import { MapLayer } from '@/types/mapStudio';
+import { HAZARD_LEGENDS } from '@/types/alert';
 import { toast } from 'sonner';
+import { Sun, CloudRain, Wind, Droplets, ArrowLeft, Save, FileText, Edit3, Eye, Flame, Send, Trash2, Check } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
+// Hazard type definitions
 const HAZARD_TYPES = [
   { value: 'heatwave', label: 'Heatwave', labelAr: 'موجة حر', icon: Sun },
   { value: 'flood', label: 'Flood', labelAr: 'فيضان', icon: CloudRain },
@@ -28,12 +33,12 @@ const HAZARD_TYPES = [
   { value: 'other', label: 'Other', labelAr: 'أخرى', icon: Wind },
 ];
 
+// Predefined areas
 const AREAS = [
   'Ramallah', 'Al-Bireh', 'Jericho', 'Jerusalem', 'Bethlehem',
   'Hebron', 'Nablus', 'Jenin', 'Tulkarm', 'Qalqilya', 'Gaza',
 ];
 
-// Quick templates for common hazard types - level is selected separately
 const QUICK_TEMPLATES = [
   { type: 'heatwave' as const, label: 'Heatwave', labelAr: 'موجة حر', icon: Flame },
   { type: 'flood' as const, label: 'Flood', labelAr: 'فيضان', icon: CloudRain },
@@ -50,35 +55,70 @@ const SECTORS = [
 export default function CreateAlert() {
   const navigate = useNavigate();
   const { id } = useParams();
-  const { alerts, addAlert, updateAlert, language, user } = useApp();
+  const { user, alerts, addAlert, updateAlert, language, mapComposition, setMapComposition } = useApp();
 
-  const existingAlert = id ? alerts.find(a => a.id === id) : null;
+  // Map editor state  
+  const [isEditingMap, setIsEditingMap] = useState(false);
+  const [selectedLayerId, setSelectedLayerId] = useState<string | null>(null);
+
+  const existingAlert = id ? alerts.find(a => a.id === id) : undefined;
   const isEdit = !!existingAlert;
 
   const [formData, setFormData] = useState({
     hazardType: existingAlert?.hazardType || 'heatwave',
-    level: existingAlert?.level || 'yellow' as AlertLevel,
-    title: existingAlert?.titleEn || '',
-    titleAr: existingAlert?.title || '',
+    level: (existingAlert?.level || 'yellow') as AlertLevel,
     titleEn: existingAlert?.titleEn || '',
-    affectedAreas: existingAlert?.affectedAreas || [] as string[],
+    titleAr: existingAlert?.title || '',
     validFrom: existingAlert?.validFrom ? new Date(existingAlert.validFrom).toISOString().slice(0, 16) : new Date().toISOString().slice(0, 16),
-    validTo: existingAlert?.validTo ? new Date(existingAlert.validTo).toISOString().slice(0, 16) : new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString().slice(0, 16),
-    technicalDescAr: existingAlert?.technicalDescAr || '',
+    validTo: existingAlert?.validTo ? new Date(existingAlert.validTo).toISOString().slice(0, 16) : new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().slice(0, 16),
+    affectedAreas: existingAlert?.affectedAreas || [] as string[],
     technicalDescEn: existingAlert?.technicalDescEn || '',
-    publicAdviceAr: existingAlert?.publicAdviceAr || '',
+    technicalDescAr: existingAlert?.technicalDescAr || '',
     publicAdviceEn: existingAlert?.publicAdviceEn || '',
-    sectorRecommendations: existingAlert?.sectorRecommendations || {} as Record<string, string>,
+    publicAdviceAr: existingAlert?.publicAdviceAr || '',
+    sectorRecommendations: existingAlert?.sectorRecommendations || {},
   });
 
-  // Markers state for map
-  const [markers, setMarkers] = useState<Marker[]>(existingAlert?.markers || []);
+  // Layer management functions
+  const handleAddLayer = (assetId: string, level: 'yellow' | 'orange' | 'red', src: string) => {
+    const newLayer: MapLayer = {
+      id: `layer-${Date.now()}`,
+      assetId,
+      level,
+      src,
+      x: 35,
+      y: 35,
+      width: 30,
+      height: 0,
+      rotation: 0,
+      opacity: 1,
+    };
+    setMapComposition({
+      layers: [...mapComposition.layers, newLayer],
+      snapshot: mapComposition.snapshot
+    });
+    setSelectedLayerId(newLayer.id);
+  };
+
+  const handleUpdateLayer = (id: string, updates: Partial<MapLayer>) => {
+    setMapComposition({
+      layers: mapComposition.layers.map(l => l.id === id ? { ...l, ...updates } : l),
+      snapshot: mapComposition.snapshot
+    });
+  };
+
+  const handleDeleteLayer = (id: string) => {
+    setMapComposition({
+      layers: mapComposition.layers.filter(l => l.id !== id),
+      snapshot: mapComposition.snapshot
+    });
+    if (selectedLayerId === id) setSelectedLayerId(null);
+  };
 
   const handleQuickTemplate = (template: typeof QUICK_TEMPLATES[0]) => {
     setFormData(prev => ({
       ...prev,
       hazardType: template.type,
-      // Keep the current level - user selects level separately
     }));
   };
 
@@ -104,8 +144,8 @@ export default function CreateAlert() {
       hazardType: formData.hazardType as Alert['hazardType'],
       level: formData.level,
       issueTime: new Date().toISOString(),
-      validFrom: new Date(formData.validFrom).toISOString(),
-      validTo: new Date(formData.validTo).toISOString(),
+      validFrom: formData.validFrom ? new Date(formData.validFrom).toISOString() : new Date().toISOString(),
+      validTo: formData.validTo ? new Date(formData.validTo).toISOString() : new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
       affectedAreas: formData.affectedAreas,
       technicalDescAr: formData.technicalDescAr,
       technicalDescEn: formData.technicalDescEn,
@@ -116,7 +156,7 @@ export default function CreateAlert() {
       sectorResponses: existingAlert?.sectorResponses || [],
       createdBy: user?.name || 'Meteorology',
       createdAt: existingAlert?.createdAt || new Date().toISOString(),
-      markers, // Include markers in alert data
+      mapComposition: mapComposition,
     };
 
     if (isEdit) {
@@ -135,7 +175,6 @@ export default function CreateAlert() {
       <Header />
 
       <main className="page-content">
-        {/* Back Button */}
         <Button
           variant="ghost"
           onClick={() => navigate('/admin-dashboard')}
@@ -152,7 +191,6 @@ export default function CreateAlert() {
           }
         </h1>
 
-        {/* Quick Templates - Hazard Type Selection */}
         <div className="grid grid-cols-3 gap-4 mb-8">
           {QUICK_TEMPLATES.map(template => (
             <button
@@ -178,89 +216,104 @@ export default function CreateAlert() {
           ))}
         </div>
 
-        <div className="grid lg:grid-cols-3 gap-8">
-          {/* Map Preview */}
-          <div className="lg:col-span-1">
-            <div className="gov-card p-4 sticky top-4">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="font-semibold">
-                  {language === 'en' ? 'Map Location' : 'موقع الخريطة'}
-                </h3>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setMarkers([])}
-                  className="text-red-500 hover:text-red-700 hover:bg-red-50"
-                >
-                  <Trash2 className="w-4 h-4" />
-                </Button>
-              </div>
-              <MapComponent
-                mode="edit"
-                markers={markers}
-                onMarkersChange={setMarkers}
-                selectedAlertLevel={formData.level}
-                className="w-full"
-              />
-              <p className="text-xs text-muted-foreground mt-2">
-                {language === 'en'
-                  ? 'Click regions to select them'
-                  : 'انقر على المناطق لتحديدها'}
-              </p>
-
-              {/* Alert Level Legend */}
-              {HAZARD_LEGENDS[formData.hazardType as keyof typeof HAZARD_LEGENDS]?.[formData.level] && (
-                <div className={cn(
-                  'mt-4 p-4 rounded-xl border-2',
-                  formData.level === 'red' ? 'border-alert-red bg-alert-red/5' :
-                    formData.level === 'orange' ? 'border-alert-orange bg-alert-orange/5' :
-                      'border-alert-yellow bg-alert-yellow/5'
-                )}>
-                  <div className="flex items-center gap-2 mb-3">
-                    <div className={cn(
-                      'w-3 h-3 rounded-full',
-                      formData.level === 'red' ? 'bg-alert-red' :
-                        formData.level === 'orange' ? 'bg-alert-orange' :
-                          'bg-alert-yellow'
-                    )} />
-                    <h4 className="font-bold text-sm">
-                      {language === 'ar' ? 'مستوى التنبيه' : 'Alert Level Legend'}
-                    </h4>
-                  </div>
-                  <p className="text-sm leading-relaxed text-foreground mb-3">
-                    {language === 'ar'
-                      ? HAZARD_LEGENDS[formData.hazardType as keyof typeof HAZARD_LEGENDS]?.[formData.level]?.ar
-                      : HAZARD_LEGENDS[formData.hazardType as keyof typeof HAZARD_LEGENDS]?.[formData.level]?.en
-                    }
-                  </p>
-                  <div className="text-xs text-muted-foreground space-y-1">
-                    <div>
-                      <strong>{language === 'ar' ? 'نوع الخطر:' : 'Hazard Type:'}</strong>{' '}
-                      {language === 'ar'
-                        ? HAZARD_TYPES.find(h => h.value === formData.hazardType)?.labelAr
-                        : HAZARD_TYPES.find(h => h.value === formData.hazardType)?.label
-                      }
-                    </div>
-                    <div>
-                      <strong>{language === 'ar' ? 'المستوى:' : 'Level:'}</strong>{' '}
-                      <span className="capitalize">
-                        {formData.level}
-                        {' ('}
-                        {formData.level === 'yellow' ? (language === 'ar' ? 'كن حذراً' : 'Be Cautious') :
-                          formData.level === 'orange' ? (language === 'ar' ? 'كن مستعداً' : 'Be Prepared') :
-                            (language === 'ar' ? 'اتخذ إجراء' : 'Take Action')}
-                        {')'}
-                      </span>
-                    </div>
-                  </div>
+        {/* Integrated Map Editor Section (Reference Design) */}
+        <div className="gov-card p-0 overflow-hidden">
+          {/* Header - Exact match to reference */}
+          <div className="bg-primary text-primary-foreground p-6 border-b border-primary-foreground/10 relative z-30">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 rounded-xl bg-primary-foreground/10 backdrop-blur-sm border border-primary-foreground/20 flex items-center justify-center">
+                  <svg className="w-6 h-6 text-primary-foreground" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M12 2L2 7l10 5 10-5-10-5z" />
+                    <path d="M2 17l10 5 10-5" />
+                    <path d="M2 12l10 5 10-5" />
+                  </svg>
                 </div>
+                <div>
+                  <h3 className="text-xl font-bold flex items-center gap-2">
+                    {language === 'en' ? 'Map Composition' : 'تكوين الخريطة'}
+                    <span className="px-2 py-0.5 bg-primary-foreground/20 rounded-full text-xs border border-primary-foreground/30">
+                      {mapComposition.layers.length} {language === 'en' ? 'layers' : 'طبقة'}
+                    </span>
+                  </h3>
+                  <p className="text-primary-foreground/70 text-sm">
+                    {isEditingMap
+                      ? (language === 'en' ? 'Edit mode - Position layers on the map' : 'وضع التحرير - ضع الطبقات على الخريطة')
+                      : (language === 'en' ? 'Preview mode - View final composition' : 'وضع المعاينة - عرض التكوين النهائي')}
+                  </p>
+                </div>
+              </div>
+
+              {isEditingMap ? (
+                <div className="flex items-center gap-2">
+                  <Button
+                    onClick={() => {
+                      setSelectedLayerId(null);
+                      setIsEditingMap(false);
+                    }}
+                    className="bg-green-600 text-white hover:bg-green-700 font-bold px-6 border-b-4 border-green-800 active:border-b-0 active:translate-y-1 transition-all flex items-center gap-2 shadow-lg"
+                  >
+                    <Check className="w-5 h-5" />
+                    {language === 'en' ? 'Apply' : 'تطبيق'}
+                  </Button>
+                  <Button
+                    onClick={() => setIsEditingMap(!isEditingMap)}
+                    className="bg-primary-foreground text-primary hover:bg-primary-foreground/90 font-semibold px-4"
+                  >
+                    <Eye className="w-4 h-4 mr-2" /> {language === 'en' ? 'Preview' : 'معاينة'}
+                  </Button>
+                </div>
+              ) : (
+                <Button
+                  onClick={() => setIsEditingMap(!isEditingMap)}
+                  className="border-2 border-primary-foreground bg-primary-foreground/10 text-primary-foreground hover:bg-primary-foreground/20 font-semibold rounded-xl"
+                >
+                  <Edit3 className="w-4 h-4 mr-2" /> {language === 'en' ? 'Edit Map' : 'تحرير الخريطة'}
+                </Button>
               )}
             </div>
           </div>
+        </div>
 
-          {/* Form */}
-          <div className="lg:col-span-2 space-y-6">
-            {/* Basic Information */}
+        {/* Content with Fade Transition */}
+        <div className="transition-all duration-700 ease-in-out">
+          {isEditingMap ? (
+            /* Edit Mode - Sidebar + Canvas */
+            <div key="edit-mode" className="flex bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 animate-in fade-in duration-700">
+              <StudioSidebar onAddLayer={handleAddLayer} />
+              <div className="flex-1 studio-canvas min-h-[600px] max-h-[700px] overflow-hidden flex items-center justify-center relative p-8">
+                {/* Nested overflow container */}
+                <div className="overflow-hidden" style={{ maxWidth: "100%", maxHeight: "100%" }}>
+                  <StudioCanvas
+                    layers={mapComposition.layers}
+                    selectedLayerId={selectedLayerId}
+                    onSelectLayer={setSelectedLayerId}
+                    onUpdateLayer={handleUpdateLayer}
+                    onDeleteLayer={handleDeleteLayer}
+                  />
+                </div>
+              </div>
+            </div>
+          ) : (
+            /* Preview Mode - Final Map with Fade Transition */
+            <div key="preview-mode" className="relative p-8 bg-slate-50 flex flex-col items-center justify-center animate-in fade-in duration-1000 scroll-mt-20">
+              <div className="relative group shadow-2xl rounded-2xl overflow-hidden border border-slate-200">
+                <StudioCanvas layers={mapComposition.layers} readOnly />
+              </div>
+
+              {/* Optional Legend Overlay if needed for context, but using Canvas for beauty */}
+              {mapComposition.layers.length === 0 && (
+                <div className="mt-8 text-center p-12 bg-slate-100 rounded-3xl border-2 border-dashed border-slate-300">
+                  <p className="text-slate-500 font-medium">{language === 'en' ? 'No layers added' : 'لا توجد طبقات مضافة'}</p>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* Rest of the form continues below */}
+        <div className="grid lg:grid-cols-1 gap-8 mt-8">
+          <div className="space-y-6">
             <div className="gov-card space-y-4">
               <h3 className="font-semibold text-lg border-b pb-2">
                 {language === 'en' ? 'Basic Information' : 'المعلومات الأساسية'}
@@ -337,10 +390,8 @@ export default function CreateAlert() {
                   placeholder="مثال: تحذير من موجة حر شديدة"
                 />
               </div>
-
             </div>
 
-            {/* Geographic & Time Scope */}
             <div className="gov-card space-y-4">
               <h3 className="font-semibold text-lg border-b pb-2">
                 {language === 'en' ? 'Geographic & Time Scope' : 'النطاق الجغرافي والزمني'}
@@ -397,7 +448,6 @@ export default function CreateAlert() {
               </div>
             </div>
 
-            {/* Descriptions */}
             <div className="gov-card space-y-4">
               <h3 className="font-semibold text-lg border-b pb-2">
                 {language === 'en' ? 'Description & Public Advice' : 'الوصف والنصائح العامة'}
@@ -454,7 +504,6 @@ export default function CreateAlert() {
               </div>
             </div>
 
-            {/* Sector Recommendations */}
             <div className="gov-card space-y-4">
               <h3 className="font-semibold text-lg border-b pb-2">
                 {language === 'ar' ? 'توصيات القطاعات' : 'Sector Recommendations'}
@@ -483,7 +532,6 @@ export default function CreateAlert() {
               </div>
             </div>
 
-            {/* Action Buttons */}
             <div className="flex justify-end gap-4 mt-8 pb-8">
               <Button
                 variant="outline"
@@ -514,8 +562,8 @@ export default function CreateAlert() {
               </Button>
             </div>
           </div>
-        </div>
-      </main>
-    </div>
+        </div >
+      </main >
+    </div >
   );
 }

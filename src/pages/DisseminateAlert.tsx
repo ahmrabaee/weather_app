@@ -45,7 +45,7 @@ export default function DisseminateAlert() {
   const [searchParams] = useSearchParams();
   const alertId = searchParams.get('alertId');
   const { user, alerts, addLog, language } = useApp();
-  
+
   const [selectedAlertId, setSelectedAlertId] = useState(alertId || '');
   const [activeTab, setActiveTab] = useState<'sms' | 'whatsapp' | 'email'>('sms');
   const [recipients, setRecipients] = useState<Recipient[]>(INITIAL_RECIPIENTS);
@@ -63,14 +63,14 @@ export default function DisseminateAlert() {
   const totalRecipients = selectedRecipients.reduce((sum, r) => sum + r.count, 0);
 
   const toggleRecipient = (id: string) => {
-    setRecipients(prev => prev.map(r => 
+    setRecipients(prev => prev.map(r =>
       r.id === id ? { ...r, selected: !r.selected } : r
     ));
   };
 
   const handleSend = () => {
     if (!selectedAlert || selectedRecipients.length === 0) return;
-    
+
     const newLog: DisseminationLog = {
       id: `LOG-${Date.now()}`,
       channel: activeTab,
@@ -79,20 +79,20 @@ export default function DisseminateAlert() {
       timestamp: new Date().toISOString(),
       status: 'sent',
     };
-    
+
     setDisseminationLogs(prev => [newLog, ...prev]);
-    addLog({ 
-      role: user.role, 
+    addLog({
+      role: user.role,
       action: `Sent ${activeTab.toUpperCase()} to ${totalRecipients.toLocaleString()} recipients for ${selectedAlert.id}`,
-      alertId: selectedAlert.id 
+      alertId: selectedAlert.id
     });
-    
+
     toast.success(
-      language === 'en' 
+      language === 'en'
         ? `${activeTab.toUpperCase()} sent to ${totalRecipients.toLocaleString()} recipients!`
         : `تم إرسال ${activeTab === 'sms' ? 'رسالة نصية' : activeTab === 'whatsapp' ? 'واتساب' : 'بريد إلكتروني'} إلى ${totalRecipients.toLocaleString()} مستلم!`
     );
-    
+
     setConfirmModalOpen(false);
     setRecipients(INITIAL_RECIPIENTS);
   };
@@ -153,7 +153,7 @@ export default function DisseminateAlert() {
   return (
     <div className="min-h-screen bg-background">
       <Header />
-      
+
       <main className="container mx-auto px-4 py-8">
         <h1 className="text-3xl font-bold text-foreground mb-8">
           {language === 'en' ? 'Disseminate Alert' : 'نشر التنبيه'}
@@ -179,7 +179,7 @@ export default function DisseminateAlert() {
               ))}
             </SelectContent>
           </Select>
-          
+
           {issuedAlerts.length === 0 && (
             <p className="text-sm text-muted-foreground mt-2">
               {language === 'en' ? 'No issued alerts available. Please approve alerts first.' : 'لا توجد تنبيهات صادرة. يرجى الموافقة على التنبيهات أولاً.'}
@@ -227,8 +227,8 @@ export default function DisseminateAlert() {
                         onClick={() => toggleRecipient(recipient.id)}
                         className={cn(
                           'p-4 rounded-lg border-2 cursor-pointer transition-all',
-                          recipient.selected 
-                            ? 'border-primary bg-primary/5' 
+                          recipient.selected
+                            ? 'border-primary bg-primary/5'
                             : 'border-muted hover:border-muted-foreground/30'
                         )}
                       >
@@ -274,7 +274,7 @@ export default function DisseminateAlert() {
             <Clock className="w-5 h-5" />
             {language === 'en' ? 'Activity Log' : 'سجل النشاط'}
           </h2>
-          
+
           {disseminationLogs.length === 0 ? (
             <p className="text-muted-foreground text-center py-8">
               {language === 'en' ? 'No dissemination activity yet.' : 'لا يوجد نشاط نشر حتى الآن.'}
@@ -312,7 +312,7 @@ export default function DisseminateAlert() {
           </DialogHeader>
           <div className="py-4">
             <p className="text-muted-foreground">
-              {language === 'en' 
+              {language === 'en'
                 ? `You are about to send ${activeTab.toUpperCase()} messages to ${totalRecipients.toLocaleString()} recipients.`
                 : `أنت على وشك إرسال رسائل ${activeTab === 'sms' ? 'نصية' : activeTab === 'whatsapp' ? 'واتساب' : 'بريد إلكتروني'} إلى ${totalRecipients.toLocaleString()} مستلم.`
               }

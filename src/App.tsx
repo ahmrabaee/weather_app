@@ -12,6 +12,7 @@ import PublicAlert from "./pages/PublicAlert";
 import AlertApproval from "./pages/AlertApproval";
 import DisseminateAlert from "./pages/DisseminateAlert";
 import ActivityLogs from "./pages/ActivityLogs";
+import MapStudioPage from "./pages/MapStudioPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -34,6 +35,7 @@ const App = () => (
             <Route path="/alert-approval" element={<AlertApproval />} />
             <Route path="/disseminate-alert" element={<DisseminateAlert />} />
             <Route path="/logs" element={<ActivityLogs />} />
+            <Route path="/map-studio" element={<MapStudioPage />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>

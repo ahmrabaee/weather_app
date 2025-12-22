@@ -47,7 +47,7 @@ export default function AlertApproval() {
   return (
     <div className="min-h-screen bg-background">
       <Header />
-      
+
       <main className="container mx-auto px-4 py-8">
         <h1 className="text-3xl font-bold text-foreground mb-8">
           {language === 'en' ? 'Approve Alerts' : 'الموافقة على التنبيهات'}
@@ -246,8 +246,8 @@ export default function AlertApproval() {
             <Button variant="outline" onClick={() => setRejectModalOpen(false)}>
               {language === 'en' ? 'Cancel' : 'إلغاء'}
             </Button>
-            <Button 
-              variant="destructive" 
+            <Button
+              variant="destructive"
               onClick={handleReject}
               disabled={!rejectReason.trim()}
             >
