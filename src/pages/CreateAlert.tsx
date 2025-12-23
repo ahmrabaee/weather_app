@@ -19,6 +19,7 @@ import { MapComponent } from '@/components/MapComponent';
 import { StudioSidebar } from '@/components/MapStudio/StudioSidebar';
 import { StudioCanvas } from '@/components/MapStudio/StudioCanvas';
 import { MapLayer } from '@/types/mapStudio';
+import { GOVERNORATE_COORDINATES } from '@/components/MapStudio/assets';
 import { HAZARD_LEGENDS } from '@/types/alert';
 import { toast } from 'sonner';
 import { Sun, CloudRain, Wind, Droplets, ArrowLeft, Save, FileText, Edit3, Eye, Flame, Send, Trash2, Check } from 'lucide-react';
@@ -82,14 +83,18 @@ export default function CreateAlert() {
 
   // Layer management functions
   const handleAddLayer = (assetId: string, level: 'yellow' | 'orange' | 'red', src: string) => {
+    // Check if we have calibrated coordinates for this governorate
+    const coords = GOVERNORATE_COORDINATES[assetId];
+
     const newLayer: MapLayer = {
       id: `layer-${Date.now()}`,
       assetId,
       level,
       src,
-      x: 35,
-      y: 35,
-      width: 30,
+      // Use calibrated values if available, otherwise fallback to defaults
+      x: coords?.x ?? 35,
+      y: coords?.y ?? 35,
+      width: coords?.width ?? 30,
       height: 0,
       rotation: 0,
       opacity: 1,
