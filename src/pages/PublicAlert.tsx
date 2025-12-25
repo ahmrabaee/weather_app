@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { format } from 'date-fns';
 import { AlertTriangle, Calendar, MapPin, CheckCircle, Info, ArrowLeft } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { AlertLegend } from '@/components/AlertLegend';
 
 export default function PublicAlert() {
   const { id } = useParams();
@@ -32,17 +33,78 @@ export default function PublicAlert() {
     );
   }
 
-  const bannerClass = {
-    yellow: 'alert-banner-yellow',
-    orange: 'alert-banner-orange',
-    red: 'alert-banner-red',
-  }[alert.level];
+  // --- Risk Spectrum Logic ---
+  // 1. Identify all active risk levels
+  const activeLevels = alert.zones && alert.zones.length > 0
+    ? Array.from(new Set(alert.zones.map(z => z.level)))
+    : [alert.level];
+
+  // Map levels to "Meteorological" hex colors for the gradient
+  // These aren't just CSS classes, but raw values for flexible gradient construction
+  const levelColors: Record<string, string> = {
+    red: '#DC2626',    // severe
+    orange: '#EA580C', // moderate
+    yellow: '#CA8A04', // awareness
+  };
+
+  // 2. Construct the Dynamic Gradient
+  // If multiple zones: Linear Gradient from highest risk -> lowest risk
+  // If single zone: A solid, unified theme
+  const getBackgroundStyle = () => {
+    if (activeLevels.length > 1) {
+      // Sort levels by severity (Red > Orange > Yellow) to ensure logical flow
+      const severityOrder = ['red', 'orange', 'yellow'];
+      const sortedLevels = activeLevels.sort((a, b) => severityOrder.indexOf(a) - severityOrder.indexOf(b));
+
+      const distinctColors = sortedLevels.map(lvl => levelColors[lvl]);
+      return {
+        background: `linear-gradient(135deg, ${distinctColors.join(', ')})`,
+        text: 'text-white'
+      };
+    } else {
+      // Single level fallback
+      const lvl = activeLevels[0];
+      return {
+        background: levelColors[lvl],
+        text: lvl === 'yellow' ? 'text-yellow-950' : 'text-white'
+      };
+    }
+  };
+
+  const currentStyle = getBackgroundStyle();
+  const isMultiZone = activeLevels.length > 1;
 
   const levelText = {
-    yellow: { en: 'YELLOW ALERT', ar: 'تنبيه أصفر' },
-    orange: { en: 'ORANGE ALERT', ar: 'تنبيه برتقالي' },
-    red: { en: 'RED ALERT', ar: 'تنبيه أحمر' },
-  }[alert.level];
+    yellow: { en: 'Yellow Alert', ar: 'تنبيه أصفر' },
+    orange: { en: 'Orange Alert', ar: 'تنبيه برتقالي' },
+    red: { en: 'Red Alert', ar: 'تنبيه أحمر' },
+  };
+
+  // Spectrum Bar Component (The "Engineering Touch")
+  const SpectrumBar = () => {
+    if (!isMultiZone) return null;
+
+    // Total width 100%, segments proportional
+    const segmentWidth = 100 / activeLevels.length;
+
+    return (
+      <div className="w-full h-3 flex mt-8 rounded-full overflow-hidden shadow-inner bg-black/20 backdrop-blur-sm border border-white/10">
+        {activeLevels
+          // Sort again to ensure the bar matches the gradient direction logic if needed, 
+          // or keep it distinct. Let's sort Red -> Yellow.
+          .sort((a, b) => ['red', 'orange', 'yellow'].indexOf(a) - ['red', 'orange', 'yellow'].indexOf(b))
+          .map(lvl => (
+            <div
+              key={lvl}
+              className="h-full first:rounded-l-full last:rounded-r-full relative group"
+              style={{ width: `${segmentWidth}%`, backgroundColor: levelColors[lvl] }}
+            >
+              {/* Tooltip-ish indicator on hover could go here, but keep it clean for now */}
+            </div>
+          ))}
+      </div>
+    );
+  };
 
   const adviceItems = (language === 'en' ? alert.publicAdviceEn : alert.publicAdviceAr)
     .split('\n')
@@ -50,44 +112,70 @@ export default function PublicAlert() {
     .map((item) => item.replace(/^[•\-]\s*/, '').trim());
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* Back button for logged in users */}
-      {user && (
-        <div className="bg-primary text-primary-foreground py-2 px-4">
+    <div className="min-h-screen bg-slate-50 font-inter pb-12">
+      {/* Navigation Bar */}
+      <nav className="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-slate-200 px-4 py-3 shadow-sm">
+        <div className="max-w-4xl mx-auto flex justify-between items-center">
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => navigate(-1)}
-            className="text-primary-foreground hover:bg-primary-foreground/10"
+            onClick={() => user ? navigate(-1) : navigate('/')}
+            className="text-slate-600 hover:bg-slate-100 hover:text-slate-900"
           >
-            <ArrowLeft className="w-4 h-4 mr-2" />
+            <ArrowLeft className="w-5 h-5 mr-2" />
             {language === 'en' ? 'Back' : 'رجوع'}
           </Button>
-        </div>
-      )}
-
-      {/* Alert Banner */}
-      <div className={cn(bannerClass, 'animate-pulse-alert')}>
-        <div className="max-w-4xl mx-auto">
-          <div className="flex items-center justify-center gap-3 mb-4">
-            <AlertTriangle className={cn(
-              'w-12 h-12',
-              alert.level === 'red' ? 'text-white' : 'text-foreground'
-            )} />
-            <h1 className={cn(
-              'text-3xl sm:text-4xl md:text-5xl font-bold',
-              alert.level === 'red' ? 'text-white' : 'text-foreground'
-            )}>
-              {language === 'en' ? levelText.en : levelText.ar}
-            </h1>
+          <div className="text-sm font-semibold text-slate-500">
+            {language === 'en' ? 'Official Alert System' : 'نظام الإنذار الرسمي'}
           </div>
-          <h2 className={cn(
-            'text-xl sm:text-2xl font-semibold',
-            alert.level === 'red' ? 'text-white/90' : 'text-foreground/80'
-          )}>
-            {language === 'en' ? alert.titleEn : alert.title}
-          </h2>
         </div>
+      </nav>
+
+      {/* Hero Banner: The Risk Spectrum */}
+      <div
+        className={cn("relative w-full overflow-hidden shadow-xl transition-all duration-500 ease-out py-16 px-6 text-center")}
+        style={{ background: currentStyle.background }}
+      >
+        <div className="max-w-4xl mx-auto relative z-10">
+          {/* Main Icon */}
+          <div className="mb-6 inline-flex p-4 rounded-full bg-white/20 backdrop-blur-sm border border-white/30 shadow-lg animate-fade-in">
+            <AlertTriangle className={cn("w-16 h-16 drop-shadow-md", currentStyle.text)} />
+          </div>
+
+          <div className="space-y-4 animate-fade-in">
+            {/* Dynamic Title */}
+            <h1 className={cn("text-4xl sm:text-6xl font-black uppercase tracking-tight drop-shadow-sm", currentStyle.text)}>
+              {isMultiZone
+                ? (language === 'en' ? 'Composite Weather Alert' : 'تحذير جوي مركب')
+                : (language === 'en' ? levelText[alert.level as keyof typeof levelText].en : levelText[alert.level as keyof typeof levelText].ar)
+              }
+            </h1>
+
+            {/* Subtitle / Context */}
+            <h2 className={cn("text-xl sm:text-2xl font-medium opacity-90 max-w-2xl mx-auto leading-relaxed", currentStyle.text)}>
+              {language === 'en' ? alert.titleEn : alert.title}
+            </h2>
+
+            {/* The Spectrum Bar (Engineering Visualization) */}
+            <div className="max-w-md mx-auto">
+              <SpectrumBar />
+              {isMultiZone && (
+                <div className={cn("flex justify-between text-xs font-mono mt-2 opacity-80 uppercase tracking-widest", currentStyle.text)}>
+                  <span>{language === 'en' ? 'Highest Risk' : 'الأعلى خطورة'}</span>
+                  <span>{language === 'en' ? 'Lowest Risk' : 'الأقل خطورة'}</span>
+                </div>
+              )}
+            </div>
+
+            <p className={cn("mt-6 text-sm font-mono opacity-70 uppercase tracking-widest", currentStyle.text)}>
+              {language === 'en' ? 'Issued: ' : 'تم الإصدار: '}
+              {format(new Date(alert.issueTime), 'dd/MM/yyyy HH:mm')}
+            </p>
+          </div>
+        </div>
+
+        {/* Subtle Pattern Overlay for Texture */}
+        <div className="absolute inset-0 opacity-10 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-white via-transparent to-transparent pointer-events-none" />
       </div>
 
       {/* Content */}
@@ -185,26 +273,8 @@ export default function PublicAlert() {
               </div>
             )}
 
-            {alert.mapComposition && (
-              <div className="gov-card">
-                <p className="text-sm text-muted-foreground mb-3 font-semibold">
-                  {language === 'en' ? 'Detailed Affected Areas:' : 'المناطق المتأثرة بالتفصيل:'}
-                </p>
-                <div className="flex flex-wrap gap-2">
-                  {alert.affectedAreas.map((area) => (
-                    <span
-                      key={area}
-                      className={cn(
-                        'px-4 py-2 rounded-full font-medium',
-                        `alert-badge-${alert.level}`
-                      )}
-                    >
-                      {area}
-                    </span>
-                  ))}
-                </div>
-              </div>
-            )}
+            {/* Alert Level Legend & Expert Analysis (Shared Component) */}
+            <AlertLegend alert={alert} className="mt-8" />
           </div>
         </div>
 

@@ -9,6 +9,9 @@ export default function TestMapCalibration() {
     const [layers, setLayers] = useState<MapLayer[]>([]);
     const [selectedLayerId, setSelectedLayerId] = useState<string | null>(null);
 
+    const [showGlow, setShowGlow] = useState(false);
+    const [showSmartLabels, setShowSmartLabels] = useState(false);
+
     const handleAddLayer = (assetId: string, level: 'yellow' | 'orange' | 'red', src: string) => {
         // Add layer with initial 30% width to allow for calibration
         const newLayer: MapLayer = {
@@ -57,9 +60,32 @@ export default function TestMapCalibration() {
     return (
         <div className="flex bg-slate-100 min-h-screen">
             <div className="w-80 bg-white border-r border-slate-200 flex flex-col h-screen sticky top-0">
-                <div className="p-4 border-b">
-                    <h1 className="font-bold text-lg">Map Calibration Tool</h1>
-                    <p className="text-xs text-slate-500">Add a layer, position it perfectly, then copy the coordinates.</p>
+                <div className="p-4 border-b space-y-3">
+                    <div>
+                        <h1 className="font-bold text-lg">Map Calibration Tool</h1>
+                        <p className="text-xs text-slate-500">Add a layer, position it perfectly, then copy the coordinates.</p>
+                    </div>
+
+                    <div className="space-y-2 pt-2 border-t">
+                        <label className="flex items-center gap-2 text-sm cursor-pointer hover:bg-slate-50 p-1 rounded">
+                            <input
+                                type="checkbox"
+                                checked={showGlow}
+                                onChange={e => setShowGlow(e.target.checked)}
+                                className="rounded border-slate-300"
+                            />
+                            <span>Enable "Life" Glow (Wheej)</span>
+                        </label>
+                        <label className="flex items-center gap-2 text-sm cursor-pointer hover:bg-slate-50 p-1 rounded">
+                            <input
+                                type="checkbox"
+                                checked={showSmartLabels}
+                                onChange={e => setShowSmartLabels(e.target.checked)}
+                                className="rounded border-slate-300"
+                            />
+                            <span>Show Unified Smart Labels</span>
+                        </label>
+                    </div>
                 </div>
 
                 <StudioSidebar onAddLayer={handleAddLayer} />

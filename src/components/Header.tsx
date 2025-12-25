@@ -31,7 +31,7 @@ export function Header() {
     <header className="gov-header">
       <div className="flex items-center gap-6">
         <div className="flex items-center gap-3">
-          <Shield className="w-8 h-8" />
+          <img src="/logo.png" alt="Logo" className="w-10 h-10 object-contain" />
           <h1 className="text-xl font-bold hidden sm:block">
             {language === 'en' ? 'Early Warning System' : 'نظام الإنذار المبكر'}
           </h1>

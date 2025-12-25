@@ -1,9 +1,8 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { Alert, AlertLevel, AlertStatus, SectorStatus, AlertZone } from '@/types/alert';
+import { MapComposition } from '@/types/mapStudio';
 
 export type UserRole = 'meteorology' | 'civil-defense' | 'agriculture' | 'water-authority' | 'environment' | 'security';
-export type AlertLevel = 'yellow' | 'orange' | 'red';
-export type AlertStatus = 'draft' | 'pending' | 'issued' | 'cancelled';
-export type SectorStatus = 'pending' | 'acknowledged' | 'in-progress' | 'completed';
 
 export interface Marker {
   id: string;
@@ -19,27 +18,17 @@ export interface SectorResponse {
   timestamp: string;
 }
 
-export interface Alert {
+export interface ActivityLog {
   id: string;
-  title: string;
-  titleEn: string;
-  hazardType: 'flood' | 'heatwave' | 'storm' | 'soil-moisture' | 'other';
-  level: AlertLevel;
-  issueTime: string;
-  validFrom: string;
-  validTo: string;
-  affectedAreas: string[];
-  technicalDescAr: string;
-  technicalDescEn: string;
-  publicAdviceAr: string;
-  publicAdviceEn: string;
-  sectorRecommendations: Record<string, string>;
-  status: AlertStatus;
-  sectorResponses: SectorResponse[];
-  createdBy: string;
-  createdAt: string;
-  markers?: Marker[]; // NEW: Map markers for alert visualization
-  mapComposition?: MapComposition;
+  role: UserRole;
+  action: string;
+  alertId?: string;
+  timestamp: string;
+}
+
+interface User {
+  role: UserRole;
+  name: string;
 }
 
 export interface ActivityLog {
@@ -96,23 +85,29 @@ const SAMPLE_ALERTS: Alert[] = [
     validFrom: new Date().toISOString(),
     validTo: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString(),
     affectedAreas: ['Ramallah', 'Al-Bireh', 'Jericho'],
+    zones: [
+      { id: 'z1', level: 'orange', affectedAreas: ['Ramallah', 'Al-Bireh', 'Jericho'] }
+    ],
     technicalDescAr: 'من المتوقع أن ترتفع درجات الحرارة لتتجاوز 40 درجة مئوية لمدة ثلاثة أيام متتالية. ستكون الظروف خطيرة بشكل خاص لكبار السن والأطفال.',
     technicalDescEn: 'Temperatures expected to exceed 40°C for three consecutive days. Conditions will be particularly dangerous for the elderly and children.',
     publicAdviceAr: '• تجنب أشعة الشمس المباشرة من الساعة 11 صباحاً حتى 4 مساءً\n• اشرب الكثير من الماء\n• تفقد الجيران المسنين\n• أبقِ النوافذ مغلقة خلال ساعات الذروة الحرارية',
     publicAdviceEn: '• Avoid direct sunlight from 11am to 4pm\n• Drink plenty of water\n• Check on elderly neighbors\n• Keep windows closed during hottest hours',
     sectorRecommendations: {
-      'civil-defense': 'Prepare emergency cooling centers. Deploy water distribution teams.',
-      'agriculture': 'Advise farmers on livestock protection. Issue irrigation advisories.',
-      'water-authority': 'Increase water supply to affected areas. Monitor reservoir levels.',
-      'environment': 'Monitor air quality. Issue health advisories.',
+      civilDefense: 'Prepare emergency cooling centers. Deploy water distribution teams.',
+      agriculture: 'Advise farmers on livestock protection. Issue irrigation advisories.',
+      water: 'Increase water supply to affected areas. Monitor reservoir levels.',
+      environment: 'Monitor air quality. Issue health advisories.',
+      security: 'Monitor public gatherings.'
     },
     status: 'issued',
     sectorResponses: [
-      { sectorName: 'civil-defense', status: 'in-progress', notes: 'Cooling centers being set up', timestamp: new Date().toISOString() },
-      { sectorName: 'water-authority', status: 'acknowledged', notes: '', timestamp: new Date().toISOString() },
+      { role: 'civil-defense', status: 'inProgress', notes: 'Cooling centers being set up', updatedAt: new Date().toISOString() },
+      { role: 'water-authority', status: 'acknowledged', notes: '', updatedAt: new Date().toISOString() },
     ],
     createdBy: 'Meteorology',
     createdAt: new Date().toISOString(),
+    // @ts-ignore
+    mapComposition: { layers: [] }
   },
   {
     id: 'ALERT-002',
@@ -124,21 +119,26 @@ const SAMPLE_ALERTS: Alert[] = [
     validFrom: new Date().toISOString(),
     validTo: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
     affectedAreas: ['Hebron', 'Bethlehem'],
+    zones: [
+      { id: 'z1', level: 'red', affectedAreas: ['Hebron', 'Bethlehem'] }
+    ],
     technicalDescAr: 'من المتوقع هطول أمطار غزيرة تسبب فيضانات مفاجئة خطيرة في المناطق المنخفضة والأودية.',
     technicalDescEn: 'Heavy rainfall expected causing dangerous flash floods in low-lying areas and valleys.',
     publicAdviceAr: '• لا تعبر الطرق المغمورة بالمياه\n• ابتعد عن الأودية\n• انتقل إلى أرض مرتفعة\n• استمع للتعليمات الرسمية',
     publicAdviceEn: '• Do not cross flooded roads\n• Stay away from valleys\n• Move to higher ground\n• Listen to official instructions',
     sectorRecommendations: {
-      'civil-defense': 'Activate emergency response teams. Prepare evacuation routes.',
-      'agriculture': 'Warn farmers in flood-prone areas.',
-      'water-authority': 'Monitor drainage systems. Prepare pumping equipment.',
+      civilDefense: 'Activate emergency response teams. Prepare evacuation routes.',
+      agriculture: 'Warn farmers in flood-prone areas.',
+      water: 'Monitor drainage systems. Prepare pumping equipment.',
     },
     status: 'issued',
     sectorResponses: [
-      { sectorName: 'civil-defense', status: 'completed', notes: 'Teams deployed', timestamp: new Date().toISOString() },
+      { role: 'civil-defense', status: 'completed', notes: 'Teams deployed', updatedAt: new Date().toISOString() },
     ],
     createdBy: 'Meteorology',
     createdAt: new Date().toISOString(),
+    // @ts-ignore
+    mapComposition: { layers: [] }
   },
   {
     id: 'ALERT-003',
@@ -150,18 +150,23 @@ const SAMPLE_ALERTS: Alert[] = [
     validFrom: new Date().toISOString(),
     validTo: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString(),
     affectedAreas: ['Nablus', 'Jenin', 'Tulkarm'],
+    zones: [
+      { id: 'z1', level: 'yellow', affectedAreas: ['Nablus', 'Jenin', 'Tulkarm'] }
+    ],
     technicalDescAr: 'مستويات رطوبة التربة أقل من المعدل الطبيعي في المنطقة الشمالية. التأثير على المحاصيل الزراعية متوقع.',
     technicalDescEn: 'Soil moisture levels below normal in the northern region. Agricultural impact expected.',
     publicAdviceAr: '• حافظ على المياه\n• قلل من استخدام المياه غير الضروري\n• أبلغ عن تسربات المياه',
     publicAdviceEn: '• Conserve water\n• Reduce non-essential water usage\n• Report water leaks',
     sectorRecommendations: {
-      'agriculture': 'Monitor irrigation schedules. Advise on water-efficient practices.',
-      'water-authority': 'Implement water conservation measures. Monitor ground water levels.',
+      agriculture: 'Monitor irrigation schedules. Advise on water-efficient practices.',
+      water: 'Implement water conservation measures. Monitor ground water levels.',
     },
     status: 'pending',
     sectorResponses: [],
     createdBy: 'Meteorology',
     createdAt: new Date().toISOString(),
+    // @ts-ignore
+    mapComposition: { layers: [] }
   },
 ];
 

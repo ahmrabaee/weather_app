@@ -23,7 +23,7 @@ export function StudioSidebar({ onAddLayer }: StudioSidebarProps) {
     };
 
     return (
-        <div className="w-80 bg-primary border-r border-primary-foreground/10 flex flex-col">
+        <div className="lg:w-80 w-full bg-primary border-r border-primary-foreground/10 flex flex-col shrink-0">
             {/* Search */}
             <div className="p-4 border-b border-primary-foreground/20">
                 <div className="relative">

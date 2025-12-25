@@ -4,7 +4,8 @@ import { Header } from '@/components/Header';
 import { AlertLevelBadge } from '@/components/AlertLevelBadge';
 import { StatusBadge } from '@/components/StatusBadge';
 import { StatCard } from '@/components/StatCard';
-import { useApp, Alert } from '@/contexts/AppContext';
+import { useApp } from '@/contexts/AppContext';
+import { Alert } from '@/types/alert';
 import { Button } from '@/components/ui/button';
 import {
   AlertTriangle,
@@ -26,6 +27,14 @@ export default function AdminDashboard() {
   const stats = useMemo(() => {
     const now = new Date();
     const active = alerts.filter(a => a.status === 'issued' && new Date(a.validTo) > now);
+
+    // Check for alerts with multiple distinct risk levels
+    const compositeCount = active.filter(a => {
+      if (!a.zones || a.zones.length <= 1) return false;
+      const levels = new Set(a.zones.map(z => z.level));
+      return levels.size > 1;
+    }).length;
+
     const yellow = active.filter(a => a.level === 'yellow').length;
     const orange = active.filter(a => a.level === 'orange').length;
     const red = active.filter(a => a.level === 'red').length;
@@ -35,6 +44,7 @@ export default function AdminDashboard() {
       yellow,
       orange,
       red,
+      composite: compositeCount,
       avgResponse: '2.5h',
     };
   }, [alerts]);
@@ -61,7 +71,7 @@ export default function AdminDashboard() {
         </h1>
 
         {/* Statistics Cards */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4 mb-8">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4 mb-8">
           <StatCard
             icon={AlertTriangle}
             value={stats.total}
@@ -80,11 +90,17 @@ export default function AdminDashboard() {
             <span className="alert-badge-red mb-2">{stats.red}</span>
             <span className="stat-label">{language === 'en' ? 'Red' : 'أحمر'}</span>
           </div>
+          <div className="gov-card-accent border-l-alert-multi flex flex-col items-center justify-center p-6 animate-fade-in">
+            <span className="alert-badge-multi mb-2">{stats.composite}</span>
+            <span className="stat-label font-bold text-center leading-tight">
+              {language === 'en' ? 'Composite' : 'مركب'}
+            </span>
+          </div>
           <StatCard
             icon={Clock}
             value={stats.avgResponse}
             label={language === 'en' ? 'Avg Response' : 'متوسط الاستجابة'}
-            className="animate-fade-in col-span-2 sm:col-span-1"
+            className="animate-fade-in"
           />
         </div>
 
@@ -163,7 +179,7 @@ export default function AdminDashboard() {
                       </span>
                     </td>
                     <td className="p-4">
-                      <AlertLevelBadge level={alert.level} size="sm" />
+                      <AlertLevelBadge level={alert.level} zones={alert.zones} size="sm" />
                     </td>
                     <td className="p-4 hidden md:table-cell">
                       <span className="text-sm text-muted-foreground truncate max-w-[200px] block">

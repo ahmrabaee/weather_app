@@ -138,6 +138,11 @@
     @apply gov-card border-l-4 border-l-primary;
   }
 
+  .border-l-alert-multi {
+    border-left: 4px solid transparent;
+    border-image: linear-gradient(to bottom, #DC2626, #EA580C, #CA8A04) 1;
+  }
+
   /* Alert Level Badges */
   .alert-badge {
     @apply inline-flex items-center px-4 py-2 rounded-full font-bold text-sm uppercase tracking-wide;
@@ -159,6 +164,13 @@
     @apply alert-badge text-white;
     background-color: hsl(var(--alert-red));
     box-shadow: 0 2px 6px hsl(var(--alert-red) / 0.3);
+  }
+
+  .alert-badge-multi {
+    @apply alert-badge text-white;
+    background: linear-gradient(135deg, #DC2626, #EA580C, #CA8A04);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+    border: 1px solid rgba(255, 255, 255, 0.2);
   }
 
   /* Status Badges */

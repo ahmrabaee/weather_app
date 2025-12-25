@@ -26,9 +26,30 @@ export function StudioCanvas({
     const [zoom, setZoom] = useState(0.65);
     const [pan, setPan] = useState({ x: 0, y: 0 });
     const [isPanning, setIsPanning] = useState(false);
+    const [isMobile, setIsMobile] = useState(false);
     const [lastMousePos, setLastMousePos] = useState({ x: 0, y: 0 });
     const containerRef = useRef<HTMLDivElement>(null);
     const targetRef = useRef<HTMLImageElement | null>(null);
+
+    // Dynamic Initial Zoom & Mobile Detection
+    useEffect(() => {
+        const checkMobile = () => {
+            const width = window.innerWidth;
+            const mobile = width < 768;
+            setIsMobile(mobile);
+
+            // If mobile, set a lower initial zoom to fit the map
+            if (mobile) {
+                setZoom(0.35); // Fits well on ~400px width
+            } else {
+                setZoom(0.65); // Desktop default
+            }
+        };
+
+        checkMobile();
+        window.addEventListener('resize', checkMobile);
+        return () => window.removeEventListener('resize', checkMobile);
+    }, []);
 
     // Handle delete key
     useEffect(() => {
@@ -145,7 +166,7 @@ export function StudioCanvas({
             )}
 
             {/* Refined Glassmorphism Instructions Banner */}
-            {!readOnly && (
+            {!readOnly && !isMobile && (
                 <div className="absolute top-6 left-1/2 -translate-x-1/2 z-40 px-6 py-4 bg-slate-950/20 backdrop-blur-md border border-white/10 rounded-3xl shadow-[0_8px_32px_rgba(0,0,0,0.2)] flex flex-col items-center gap-3 min-w-[320px] transition-all hover:bg-slate-950/30">
                     <div className="flex items-center gap-3 text-white/90">
                         <Keyboard className="w-5 h-5 opacity-60" />
@@ -201,7 +222,7 @@ export function StudioCanvas({
                 {layers.map(layer => {
                     // CRITICAL FIX: Convert percentages to pixels for Moveable compatibility
                     const containerWidth = 600;
-                    const containerHeight = 917; // FIXED: Match actual image aspect ratio
+                    const containerHeight = 917;
                     const leftPx = (layer.x / 100) * containerWidth;
                     const topPx = (layer.y / 100) * containerHeight;
                     const widthPx = (layer.width / 100) * containerWidth;

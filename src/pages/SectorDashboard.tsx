@@ -4,7 +4,8 @@ import { AlertLevelBadge } from '@/components/AlertLevelBadge';
 import { StatusBadge } from '@/components/StatusBadge';
 import { MapComponent } from '@/components/MapComponent';
 import { StudioCanvas } from '@/components/MapStudio/StudioCanvas';
-import { useApp, Alert, SectorStatus, ROLE_NAMES } from '@/contexts/AppContext';
+import { useApp, ROLE_NAMES } from '@/contexts/AppContext';
+import { Alert, SectorStatus, SectorResponse } from '@/types/alert';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import {
@@ -17,11 +18,13 @@ import {
 import { format } from 'date-fns';
 import { toast } from 'sonner';
 import { AlertTriangle, Calendar, MapPin, CheckCircle, Clock, Users } from 'lucide-react';
+import { cn } from '@/lib/utils';
+import { AlertLegend } from '@/components/AlertLegend';
 
 const STATUS_OPTIONS: { value: SectorStatus; label: string }[] = [
   { value: 'pending', label: 'Pending' },
   { value: 'acknowledged', label: 'Acknowledged' },
-  { value: 'in-progress', label: 'In Progress' },
+  { value: 'inProgress', label: 'In Progress' },
   { value: 'completed', label: 'Completed' },
 ];
 
@@ -45,7 +48,7 @@ export default function SectorDashboard() {
   const currentSectorResponse = useMemo(() => {
     if (!selectedAlert || !user) return null;
     return selectedAlert.sectorResponses.find(
-      (r) => r.sectorName === user.role
+      (r) => r.role === user.role
     );
   }, [selectedAlert, user]);
 
@@ -54,7 +57,7 @@ export default function SectorDashboard() {
     const alert = alerts.find((a) => a.id === alertId);
     if (alert && user) {
       const response = alert.sectorResponses.find(
-        (r) => r.sectorName === user.role
+        (r) => r.role === user.role
       );
       setStatusUpdate(response?.status || 'pending');
       setNotes(response?.notes || '');
@@ -65,14 +68,14 @@ export default function SectorDashboard() {
     if (!selectedAlert || !user) return;
 
     const existingResponses = selectedAlert.sectorResponses.filter(
-      (r) => r.sectorName !== user.role
+      (r) => r.role !== user.role
     );
 
-    const newResponse = {
-      sectorName: user.role,
+    const newResponse: SectorResponse = {
+      role: user.role,
       status: statusUpdate,
       notes,
-      timestamp: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
     };
 
     updateAlert(selectedAlert.id, {
@@ -117,7 +120,7 @@ export default function SectorDashboard() {
             <div className="space-y-3">
               {activeAlerts.map((alert) => {
                 const response = alert.sectorResponses.find(
-                  (r) => r.sectorName === user?.role
+                  (r) => r.role === user?.role
                 );
                 return (
                   <button
@@ -163,41 +166,122 @@ export default function SectorDashboard() {
             {selectedAlert ? (
               <div className="gov-card animate-fade-in">
                 {/* Alert Header */}
-                <div className="border-b pb-4 mb-6">
-                  <div className="flex flex-wrap items-start justify-between gap-4 mb-4">
-                    <div>
-                      <h2 className="text-2xl font-bold text-foreground mb-2">
-                        {language === 'en'
-                          ? selectedAlert.titleEn
-                          : selectedAlert.title}
-                      </h2>
-                      <div className="flex flex-wrap gap-3 text-sm text-muted-foreground">
-                        <span className="flex items-center gap-1">
-                          <Clock className="w-4 h-4" />
-                          Issued:{' '}
-                          {format(
-                            new Date(selectedAlert.issueTime),
-                            'dd MMM yyyy, HH:mm'
-                          )}
-                        </span>
-                        <span>•</span>
-                        <span>By: {selectedAlert.createdBy}</span>
-                      </div>
-                    </div>
-                    <AlertLevelBadge level={selectedAlert.level} size="lg" />
-                  </div>
+                {/* Alert Header - Risk Spectrum Style */}
+                {(() => {
+                  // --- Risk Spectrum Logic (Scoped to this render block) ---
+                  const activeLevels = selectedAlert.zones && selectedAlert.zones.length > 0
+                    ? Array.from(new Set(selectedAlert.zones.map(z => z.level)))
+                    : [selectedAlert.level];
 
-                  <div className="flex flex-wrap gap-4 text-sm">
-                    <div className="flex items-center gap-2">
-                      <Calendar className="w-4 h-4 text-muted-foreground" />
-                      <span>
-                        Valid:{' '}
-                        {format(new Date(selectedAlert.validFrom), 'dd MMM HH:mm')}{' '}
-                        - {format(new Date(selectedAlert.validTo), 'dd MMM HH:mm')}
-                      </span>
+                  const levelColors: Record<string, string> = {
+                    red: '#DC2626',
+                    orange: '#EA580C',
+                    yellow: '#CA8A04',
+                  };
+
+                  let backgroundStyle = {};
+                  let textColor = 'text-foreground';
+                  let iconColor = 'text-muted-foreground';
+
+                  if (activeLevels.length > 1) {
+                    const sortedLevels = activeLevels.sort((a, b) => ['red', 'orange', 'yellow'].indexOf(a) - ['red', 'orange', 'yellow'].indexOf(b));
+                    const distinctColors = sortedLevels.map(lvl => levelColors[lvl]);
+                    backgroundStyle = { background: `linear-gradient(135deg, ${distinctColors.join(', ')})` };
+                    textColor = 'text-white';
+                    iconColor = 'text-white/80';
+                  } else {
+                    const lvl = activeLevels[0];
+                    if (lvl === 'red') {
+                      backgroundStyle = { background: levelColors.red };
+                      textColor = 'text-white';
+                      iconColor = 'text-white/80';
+                    } else if (lvl === 'orange') {
+                      backgroundStyle = { background: levelColors.orange };
+                      textColor = 'text-white';
+                      iconColor = 'text-white/80';
+                    } else {
+                      // Yellow or default - keep it light or use the yellow color?
+                      // User wants "SAME SHAPE".
+                      backgroundStyle = { background: levelColors.yellow };
+                      textColor = 'text-yellow-950';
+                      iconColor = 'text-yellow-900/80';
+                    }
+                  }
+
+                  const isMultiZone = activeLevels.length > 1;
+
+                  return (
+                    <div
+                      className={cn("rounded-lg p-6 mb-6 shadow-md transition-all duration-300", textColor)}
+                      style={backgroundStyle}
+                    >
+                      <div className="flex flex-wrap items-start justify-between gap-4 mb-4">
+                        <div>
+                          <div className="flex items-center gap-2 mb-2">
+                            {isMultiZone && (
+                              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-black/20 backdrop-blur-md border border-white/20 text-xs font-bold uppercase tracking-wide">
+                                <MapPin className="w-3 h-3" />
+                                Multi-Zone
+                              </span>
+                            )}
+                            {/* Original Badge removed or kept? Let's keep a simplified version or just the text */}
+                            {!isMultiZone && (
+                              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-black/10 backdrop-blur-sm border border-black/5 text-xs font-bold uppercase tracking-wide">
+                                {selectedAlert.level} Alert
+                              </span>
+                            )}
+                          </div>
+
+                          <h2 className="text-3xl font-black uppercase tracking-tight mb-2 drop-shadow-sm">
+                            {language === 'en' ? selectedAlert.titleEn : selectedAlert.title}
+                          </h2>
+
+                          <div className={cn("flex flex-wrap gap-3 text-sm font-medium", iconColor)}>
+                            <span className="flex items-center gap-1">
+                              <Clock className="w-4 h-4" />
+                              Issued: {format(new Date(selectedAlert.issueTime), 'dd MMM yyyy, HH:mm')}
+                            </span>
+                            <span>•</span>
+                            <span>By: {selectedAlert.createdBy}</span>
+                          </div>
+                        </div>
+
+                        {/* Right Side: Validity */}
+                        <div className={cn("flex items-center gap-2 text-sm font-semibold px-4 py-2 rounded-lg bg-white/20 backdrop-blur-md border border-white/10", textColor)}>
+                          <Calendar className="w-4 h-4" />
+                          <div className="flex flex-col">
+                            <span className="text-xs opacity-80 uppercase tracking-widest">Valid Until</span>
+                            <span>{format(new Date(selectedAlert.validTo), 'dd MMM HH:mm')}</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Spectrum Bar for Multi-Zone */}
+                      {isMultiZone && (
+                        <div className="w-full mt-4">
+                          <div className="w-full h-3 flex rounded-full overflow-hidden shadow-inner bg-black/20 border border-white/10">
+                            {activeLevels
+                              .sort((a, b) => ['red', 'orange', 'yellow'].indexOf(a) - ['red', 'orange', 'yellow'].indexOf(b))
+                              .map(lvl => (
+                                <div
+                                  key={lvl}
+                                  className="h-full first:rounded-l-full last:rounded-r-full"
+                                  style={{ width: `${100 / activeLevels.length}%`, backgroundColor: levelColors[lvl] }}
+                                />
+                              ))}
+                          </div>
+                          <div className={cn("flex justify-between text-[10px] font-mono mt-1 opacity-80 uppercase tracking-widest", iconColor)}>
+                            <span>Highest Risk</span>
+                            <span>Lowest Risk</span>
+                          </div>
+                        </div>
+                      )}
                     </div>
-                  </div>
-                </div>
+                  );
+                })()}
+
+                {/* Shared Alert Legend */}
+                <AlertLegend alert={selectedAlert} className="mb-6" />
 
                 {/* Affected Areas with Map */}
                 <div className="mb-6">
@@ -265,20 +349,20 @@ export default function SectorDashboard() {
                   </h3>
                   <div className="grid sm:grid-cols-2 gap-3">
                     {selectedAlert.sectorResponses
-                      .filter((r) => r.sectorName !== user?.role)
+                      .filter((r) => r.role !== user?.role)
                       .map((response) => (
                         <div
-                          key={response.sectorName}
+                          key={response.role}
                           className="flex items-center justify-between p-3 bg-muted/50 rounded-lg"
                         >
                           <span className="font-medium">
-                            {ROLE_NAMES[response.sectorName as keyof typeof ROLE_NAMES]}
+                            {ROLE_NAMES[response.role as keyof typeof ROLE_NAMES]}
                           </span>
                           <StatusBadge status={response.status} />
                         </div>
                       ))}
                     {selectedAlert.sectorResponses.filter(
-                      (r) => r.sectorName !== user?.role
+                      (r) => r.role !== user?.role
                     ).length === 0 && (
                         <p className="text-muted-foreground col-span-2">
                           {language === 'en'

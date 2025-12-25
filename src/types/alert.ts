@@ -1,3 +1,5 @@
+import { MapComposition } from './mapStudio';
+
 export type AlertLevel = 'yellow' | 'orange' | 'red';
 export type AlertStatus = 'draft' | 'issued' | 'cancelled';
 export type SectorStatus = 'pending' | 'acknowledged' | 'inProgress' | 'completed';
@@ -10,16 +12,35 @@ export interface SectorResponse {
   updatedAt: string;
 }
 
+export interface AlertZone {
+  id: string;
+  level: AlertLevel;
+  affectedAreas: string[];
+  // Future: specialized instructions per zone can be added here
+}
+
 export interface Alert {
   id: string;
   title: string;
   titleEn: string;
   hazardType: HazardType;
+  /**
+   * @deprecated Used as "Max Severity Level" for backward compatibility. 
+   * The source of truth is now the `zones` array.
+   */
   level: AlertLevel;
   issueTime: string;
   validFrom: string;
   validTo: string;
+  /**
+   * @deprecated Used as "All Affected Areas" for backward compatibility.
+   * The source of truth is now the `zones` array.
+   */
   affectedAreas: string[];
+
+  // New Vector-based Multi-zone support
+  zones: AlertZone[];
+
   technicalDescAr: string;
   technicalDescEn: string;
   publicAdviceAr: string;
@@ -35,6 +56,7 @@ export interface Alert {
   sectorResponses: SectorResponse[];
   createdBy: string;
   createdAt: string;
+  mapComposition?: MapComposition; // Added to interface to fix type errors
 }
 
 export interface ActivityLog {
