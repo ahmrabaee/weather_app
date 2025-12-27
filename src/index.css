@@ -100,7 +100,7 @@
   }
 
   body {
-    @apply bg-background text-foreground antialiased;
+    @apply bg-background text-foreground antialiased w-full;
   }
 
   /* RTL Support for Arabic */
@@ -110,6 +110,11 @@
 }
 
 @layer components {
+
+  /* Helper to prevent horizontal scroll */
+  .no-overflow {
+    @apply max-w-full overflow-x-hidden;
+  }
 
   /* Government Card Style with Blue Corner Decorations */
   .gov-card {
@@ -209,7 +214,7 @@
 
   /* Header Navigation */
   .gov-header {
-    @apply bg-primary text-primary-foreground h-[72px] flex items-center justify-between px-6;
+    @apply w-full bg-primary text-primary-foreground h-[72px] flex items-center justify-between px-6 sticky top-0 z-50;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
   }
 
@@ -255,7 +260,7 @@
 
   /* Page Container */
   .page-container {
-    @apply min-h-screen bg-background;
+    @apply min-h-screen w-full bg-background;
   }
 
   .page-content {
@@ -424,6 +429,10 @@
 
 .bg-warning-red {
   background-color: #DC2626;
+}
+
+.bg-alert-multi {
+  background: linear-gradient(135deg, #DC2626, #EA580C, #CA8A04);
 }
 
 /* Map Marker Pulse Keyframes */

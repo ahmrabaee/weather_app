@@ -133,7 +133,7 @@ export function StudioCanvas({
     };
 
     return (
-        <div ref={containerRef} className="w-full h-full flex flex-col items-center justify-center relative">
+        <div ref={containerRef} className="w-full max-w-full h-full flex flex-col items-center justify-center relative overflow-hidden">
             {/* Toolbar */}
             {!readOnly && (
                 <div className="absolute bottom-6 z-20 flex items-center gap-2 bg-slate-900/90 backdrop-blur px-3 py-2 rounded-full border border-slate-800 shadow-xl">

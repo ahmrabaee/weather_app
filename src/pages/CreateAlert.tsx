@@ -258,7 +258,7 @@ export default function CreateAlert() {
           }
         </h1>
 
-        <div className="grid grid-cols-3 gap-4 mb-8">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
           {QUICK_TEMPLATES.map(template => (
             <button
               key={template.type}
@@ -284,7 +284,7 @@ export default function CreateAlert() {
         </div>
 
         {/* Integrated Map Editor Section (Reference Design) */}
-        <div className="gov-card p-0 overflow-hidden mb-8">
+        <div className="gov-card p-0 overflow-x-auto mb-8">
           {/* Header - Exact match to reference */}
           <div className="bg-primary text-primary-foreground p-4 lg:p-6 border-b border-primary-foreground/10 relative z-30">
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
@@ -347,7 +347,7 @@ export default function CreateAlert() {
               /* Edit Mode - Sidebar + Canvas */
               <div key="edit-mode" className="flex flex-col lg:flex-row bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 animate-in fade-in duration-700">
                 <StudioSidebar onAddLayer={handleAddLayer} />
-                <div className="flex-1 studio-canvas min-h-[400px] lg:min-h-[600px] max-h-[700px] overflow-hidden flex items-center justify-center relative p-4 lg:p-8">
+                <div className="flex-1 studio-canvas min-h-[400px] lg:min-h-[600px] max-h-[700px] overflow-x-auto flex items-center justify-center relative p-4 lg:p-8">
                   {/* Nested overflow container */}
                   <div className="overflow-hidden" style={{ maxWidth: "100%", maxHeight: "100%" }}>
                     <StudioCanvas
@@ -362,7 +362,7 @@ export default function CreateAlert() {
               </div>
             ) : (
               /* Preview Mode - Final Map with Fade Transition */
-              <div key="preview-mode" className="relative p-4 lg:p-8 bg-slate-50 flex flex-col items-center justify-center animate-in fade-in duration-1000 scroll-mt-20 overflow-hidden">
+              <div key="preview-mode" className="relative p-4 lg:p-8 bg-slate-50 flex flex-col items-center justify-center animate-in fade-in duration-1000 scroll-mt-20 overflow-x-auto">
                 <div className="relative group shadow-2xl rounded-2xl overflow-hidden border border-slate-200">
                   <StudioCanvas layers={mapComposition.layers} readOnly />
                 </div>
@@ -456,17 +456,19 @@ export default function CreateAlert() {
                 </label>
 
                 <Tabs defaultValue="red" value={activeTab} onValueChange={(v) => setActiveTab(v as AlertLevel)} className="w-full">
-                  <TabsList className="grid w-full grid-cols-3 mb-4">
-                    <TabsTrigger value="red" className="data-[state=active]:bg-red-100 data-[state=active]:text-red-900 data-[state=active]:border-red-200 border border-transparent">
-                      <AlertTriangle className="w-4 h-4 mr-2" /> {language === 'ar' ? 'شديد الخطورة (أحمر)' : 'High Risk (Red)'}
-                    </TabsTrigger>
-                    <TabsTrigger value="orange" className="data-[state=active]:bg-orange-100 data-[state=active]:text-orange-900 data-[state=active]:border-orange-200 border border-transparent">
-                      <AlertTriangle className="w-4 h-4 mr-2" /> {language === 'ar' ? 'متوسط الخطورة (برتقالي)' : 'Medium Risk (Orange)'}
-                    </TabsTrigger>
-                    <TabsTrigger value="yellow" className="data-[state=active]:bg-yellow-100 data-[state=active]:text-yellow-900 data-[state=active]:border-yellow-200 border border-transparent">
-                      <AlertTriangle className="w-4 h-4 mr-2" /> {language === 'ar' ? 'منخفض الخطورة (أصفر)' : 'Low Risk (Yellow)'}
-                    </TabsTrigger>
-                  </TabsList>
+                  <div className="overflow-x-auto pb-2 -mx-2 px-2">
+                    <TabsList className="flex min-w-max sm:grid sm:w-full sm:grid-cols-3 mb-4">
+                      <TabsTrigger value="red" className="flex-1 whitespace-nowrap data-[state=active]:bg-red-100 data-[state=active]:text-red-900 data-[state=active]:border-red-200 border border-transparent">
+                        <AlertTriangle className="w-4 h-4 mr-2" /> {language === 'ar' ? 'شديد الخطورة (أحمر)' : 'High Risk (Red)'}
+                      </TabsTrigger>
+                      <TabsTrigger value="orange" className="flex-1 whitespace-nowrap data-[state=active]:bg-orange-100 data-[state=active]:text-orange-900 data-[state=active]:border-orange-200 border border-transparent">
+                        <AlertTriangle className="w-4 h-4 mr-2" /> {language === 'ar' ? 'متوسط الخطورة (برتقالي)' : 'Medium Risk (Orange)'}
+                      </TabsTrigger>
+                      <TabsTrigger value="yellow" className="flex-1 whitespace-nowrap data-[state=active]:bg-yellow-100 data-[state=active]:text-yellow-900 data-[state=active]:border-yellow-200 border border-transparent">
+                        <AlertTriangle className="w-4 h-4 mr-2" /> {language === 'ar' ? 'منخفض الخطورة (أصفر)' : 'Low Risk (Yellow)'}
+                      </TabsTrigger>
+                    </TabsList>
+                  </div>
 
                   {['red', 'orange', 'yellow'].map((level) => (
                     <TabsContent key={level} value={level} className="space-y-4 animate-in fade-in duration-300">
@@ -476,7 +478,7 @@ export default function CreateAlert() {
                           level === 'orange' ? "border-orange-200 bg-orange-50/50" :
                             "border-yellow-200 bg-yellow-50/50"
                       )}>
-                        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
+                        <div className="grid grid-cols-1 xs:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
                           {AREAS.map(area => {
                             const isSelected = formData.zones[level as AlertLevel].includes(area);
                             const usedInOther = !isSelected && (

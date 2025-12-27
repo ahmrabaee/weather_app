@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useApp, Alert } from '@/contexts/AppContext';
+import { useApp } from '@/contexts/AppContext';
+import { Alert } from '@/types/alert';
 import { Header } from '@/components/Header';
 import { AlertLevelBadge } from '@/components/AlertLevelBadge';
 import { Button } from '@/components/ui/button';
@@ -82,9 +83,13 @@ export default function AlertApproval() {
                   <div className="flex items-start gap-3">
                     <div className={cn(
                       'w-3 h-3 rounded-full mt-1.5 flex-shrink-0',
-                      alert.level === 'yellow' && 'bg-alert-yellow',
-                      alert.level === 'orange' && 'bg-alert-orange',
-                      alert.level === 'red' && 'bg-alert-red'
+                      alert.zones && Array.from(new Set(alert.zones.map(z => z.level))).length > 1
+                        ? 'bg-alert-multi'
+                        : alert.level === 'yellow'
+                          ? 'bg-alert-yellow'
+                          : alert.level === 'orange'
+                            ? 'bg-alert-orange'
+                            : 'bg-alert-red'
                     )} />
                     <div className="flex-1 min-w-0">
                       <h3 className="font-semibold truncate">
@@ -115,7 +120,11 @@ export default function AlertApproval() {
                       </h2>
                       <p className="text-muted-foreground mt-1">ID: {selectedAlert.id}</p>
                     </div>
-                    <AlertLevelBadge level={selectedAlert.level} size="lg" />
+                    <AlertLevelBadge
+                      level={selectedAlert.level}
+                      zones={selectedAlert.zones}
+                      size="lg"
+                    />
                   </div>
 
                   {/* Description */}

@@ -1,7 +1,7 @@
 import { MapComposition } from './mapStudio';
 
 export type AlertLevel = 'yellow' | 'orange' | 'red';
-export type AlertStatus = 'draft' | 'issued' | 'cancelled';
+export type AlertStatus = 'draft' | 'pending' | 'issued' | 'cancelled';
 export type SectorStatus = 'pending' | 'acknowledged' | 'inProgress' | 'completed';
 export type HazardType = 'flood' | 'heatwave' | 'storm' | 'soil-moisture' | 'heavyRain' | 'coldWave' | 'wind';
 

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useApp } from '@/contexts/AppContext';
+import { Alert } from '@/types/alert';
 import { Header } from '@/components/Header';
 import { AlertLevelBadge } from '@/components/AlertLevelBadge';
 import { Button } from '@/components/ui/button';
@@ -113,7 +114,12 @@ export default function DisseminateAlert() {
     const advice = language === 'en' ? selectedAlert.publicAdviceEn : selectedAlert.publicAdviceAr;
 
     if (activeTab === 'sms') {
-      const message = `🚨 ALERT: ${title} (${selectedAlert.level.toUpperCase()})\n\n${advice.substring(0, 140)}...`;
+      const isMulti = selectedAlert.zones && Array.from(new Set(selectedAlert.zones.map(z => z.level))).length > 1;
+      const displayLevel = isMulti
+        ? (language === 'en' ? 'MULTI' : 'مركب')
+        : selectedAlert.level.toUpperCase();
+
+      const message = `🚨 ALERT: ${title} (${displayLevel})\n\n${advice.substring(0, 140)}...`;
       return (
         <div className="bg-muted rounded-2xl p-4 max-w-sm">
           <p className="text-sm whitespace-pre-line">{message}</p>
@@ -172,7 +178,7 @@ export default function DisseminateAlert() {
               {issuedAlerts.map(alert => (
                 <SelectItem key={alert.id} value={alert.id}>
                   <div className="flex items-center gap-2">
-                    <AlertLevelBadge level={alert.level} size="sm" />
+                    <AlertLevelBadge level={alert.level} zones={alert.zones} size="sm" />
                     <span>{language === 'en' ? alert.titleEn : alert.title}</span>
                   </div>
                 </SelectItem>
